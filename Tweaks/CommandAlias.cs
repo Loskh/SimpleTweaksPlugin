@@ -134,8 +134,8 @@ namespace SimpleTweaksPlugin.Tweaks {
         };
         #endregion
 
-        public override string Name => "定义命令同义词";
-        public override string Description => "创建聊天栏命令的同义词以方便输入";
+        public override string Name => "自定义同义命令";
+        public override string Description => "创建聊天栏命令的别称以方便输入";
 
         private IntPtr processChatInputAddress;
         private unsafe delegate byte ProcessChatInputDelegate(IntPtr uiModule, byte** a2, IntPtr a3);
