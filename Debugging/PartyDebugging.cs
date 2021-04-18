@@ -16,7 +16,7 @@ namespace SimpleTweaksPlugin.Debugging {
         public override void Draw() {
 
             if (groupManager == null) {
-                groupManager = (GroupManager*) Plugin.PluginInterface.TargetModuleScanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? 44 8B E7");
+                groupManager = (GroupManager*) Plugin.PluginInterface.TargetModuleScanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 80 B8 ?? ?? ?? ?? ?? 76 50");
             }
             
             DebugManager.ClickToCopyText($"{(ulong) groupManager:X}"); ImGui.SameLine();
@@ -34,7 +34,7 @@ namespace SimpleTweaksPlugin.Debugging {
 
                 for (var i = 0; i < 8 && i < groupManager->MemberCount; i++) {
                     var partyMember = partyMembers[i];
-                    var name = Marshal.PtrToStringAnsi(new IntPtr(partyMember.Name));
+                    var name = Plugin.Common.ReadSeString(partyMember.Name);
                     ImGui.Text($"[{(ulong)&partyMember:X}] Lv {partyMember.Level}, {partyMember.ObjectID:X}, {name}");
 
                     PlayerCharacter chara = null;

@@ -1,41 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Numerics;
-using System.Runtime.InteropServices;
 using Dalamud.Game.Internal;
-using Dalamud.Game.ClientState;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.FFXIV.Group;
-using ImGuiNET;
-using ImGuiScene;
-using Lumina.Excel.GeneratedSheets;
-using Lumina.Text;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
-using static SimpleTweaksPlugin.Tweaks.UiAdjustments.Step;
-using Addon = Dalamud.Game.Internal.Gui.Addon.Addon;
 using SeString = Dalamud.Game.Text.SeStringHandling.SeString;
-using System.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using ImGuiNET;
 
 namespace SimpleTweaksPlugin
 {
     public partial class UiAdjustmentsConfig
     {
-        public HidePartyNames.Config HidePartyNames = new HidePartyNames.Config();
+        public HidePartyNames.Config HidePartyNames = new();
     }
 }
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 {
-    public class HidePartyNames : UiAdjustments.SubTweak
+    public unsafe class HidePartyNames : UiAdjustments.SubTweak
     {
         public class Config
         {
             // int HideParty = 0;
         }
 
-        private string[] jobStrings = new string[40]
+        private string[] jobStrings = new string[]
         {
             "ADV",
             "GLA",
@@ -79,62 +70,30 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             "UNKNOWN"
         };
 
-        private string[,] strcache = new string[8,2];
-        private byte[] jobcache = new byte[8];
+
+        private GroupManager* groupManager;
+        private PartyMember* partyMembers;
+        private AtkUnitBase* partyPointer;
+        private AtkResNode* partyNode;
+        private AtkTextNode*[] textsNodes = new AtkTextNode*[8];
+        private AtkResNode* tempNode;
 
         public override string Name => "隐藏组队界面角色名";
         public override string Description => "隐藏组队界面角色名";
 
 
-        protected override DrawConfigDelegate DrawConfigTree => (ref bool changed) =>
+        /*
+         protected override DrawConfigDelegate DrawConfigTree => (ref bool changed) =>
         {
-            /*
-            var bSize = buttonSize * ImGui.GetIO().FontGlobalScale;
-            ImGui.SetNextItemWidth(90 * ImGui.GetIO().FontGlobalScale);
-            if (ImGui.InputInt($"###{GetType().Name}_Offset", ref PluginConfig.UiAdjustments.HidePartyNames.Offset)) {
-                if (PluginConfig.UiAdjustments.HidePartyNames.Offset > MaxOffset) PluginConfig.UiAdjustments.HidePartyNames.Offset = MaxOffset;
-                if (PluginConfig.UiAdjustments.HidePartyNames.Offset < MinOffset) PluginConfig.UiAdjustments.HidePartyNames.Offset = MinOffset;
-                changed = true;
-            }
-            ImGui.SameLine();
-            ImGui.PushStyleVar(ImGuiStyleVar.ItemSpacing, new Vector2(2));
-            ImGui.PushFont(UiBuilder.IconFont);
-            if (ImGui.Button($"{(char)FontAwesomeIcon.ArrowUp}", bSize)) {
-                PluginConfig.UiAdjustments.HidePartyNames.Offset = 8;
-                changed = true;
-            }
-            ImGui.PopFont();
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("显示在进度条上方");
-
-            ImGui.SameLine();
-            ImGui.PushFont(UiBuilder.IconFont);
-            if (ImGui.Button($"{(char) FontAwesomeIcon.CircleNotch}", bSize)) {
-                PluginConfig.UiAdjustments.HidePartyNames.Offset = 24;
-                changed = true;
-            }
-            ImGui.PopFont();
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("初始位置");
-
-            
-            ImGui.SameLine();
-            ImGui.PushFont(UiBuilder.IconFont);
-            if (ImGui.Button($"{(char)FontAwesomeIcon.ArrowDown}", bSize)) {
-                PluginConfig.UiAdjustments.HidePartyNames.Offset = 32;
-                changed = true;
-            }
-            ImGui.PopFont();
-            if (ImGui.IsItemHovered()) ImGui.SetTooltip("显示在进度条下方");
-            ImGui.PopStyleVar();
-            ImGui.SameLine();
-            ImGui.Text("垂直偏移量");
-            */
+               
         };
+        */
 
-        public void OnFrameworkUpdate(Framework framework)
+        private void OnFrameworkUpdate(Framework framework)
         {
             try
             {
-                FindString(framework);
+                FindString(framework, true);
             }
             catch (Exception ex)
             {
@@ -142,60 +101,85 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             }
         }
 
-        private unsafe void FindString(Framework framework)
+        private unsafe void FindString(Framework framework, bool run)
         {
-            var groupManager =
-                (GroupManager*) Plugin.PluginInterface.TargetModuleScanner.GetStaticAddressFromSig(
+            var count = 0;
+            if (groupManager == null)
+            {
+                groupManager = (GroupManager*) Plugin.PluginInterface.TargetModuleScanner.GetStaticAddressFromSig(
                     "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 80 B8 ?? ?? ?? ?? ?? 76 50");
-            var partyMembers = (PartyMember*) groupManager->PartyMembers;
-            var party = framework.Gui.GetAddonByName("_PartyList", 1);
-            var partyPointer = (AtkUnitBase*) (party.Address);
-            var node = partyPointer->RootNode->ChildNode->PrevSiblingNode->PrevSiblingNode->PrevSiblingNode->ChildNode;
-            while (node->PrevSiblingNode != null) node = node->PrevSiblingNode;
+                partyMembers = (PartyMember*) groupManager->PartyMembers;
+                count = groupManager->MemberCount;
+            }
+
+
+            if (partyNode == null)
+            {
+                partyPointer = (AtkUnitBase*) (framework.Gui.GetAddonByName("_PartyList", 1).Address);
+                partyNode =
+                    partyPointer->RootNode->ChildNode->PrevSiblingNode->PrevSiblingNode->PrevSiblingNode->ChildNode;
+                while (partyNode->PrevSiblingNode != null) partyNode = partyNode->PrevSiblingNode;
+                tempNode = partyNode; //PartylistUI.player<1>.textnode 
+                for (var i = 0; i < 8; i++)
+                {
+                    var comp = (AtkComponentNode*) tempNode;
+                    var child = comp->Component->UldManager.RootNode;
+                    for (var j = 0; j <= 11; j++) child = child->PrevSiblingNode;
+                    var text = (AtkTextNode*) child->ChildNode;
+                    textsNodes[i] = text;
+                    tempNode = tempNode->NextSiblingNode;
+                }
+            }
+
+            tempNode = partyNode;
+
             for (var i = 0; i < 8; i++)
             {
-                var comp = (AtkComponentNode*) node;
-                var child = comp->Component->UldManager.RootNode;
-                for (var j = 0; j <= 11; j++) child = child->PrevSiblingNode;
-                var text = (AtkTextNode*) child->ChildNode;
-                var sestr = Plugin.Common.ReadSeString(text->NodeText.StringPtr);
-                //if (sestr.ToString() == "") continue;
-                var name = Plugin.Common.ReadSeString(partyMembers[i].Name);
-                var job = partyMembers[i].ClassJob;
-
-                strcache[i, 0] = name.ToString();
-                strcache[i, 1] = sestr.ToString();
-                jobcache[i] = job;
-
-                if (job >= 0)
+                var str = Plugin.Common.ReadSeString(textsNodes[i]->NodeText.StringPtr).ToString(); //UI string
+                var name = Plugin.Common.ReadSeString(partyMembers[i].Name).ToString(); //Name from partyMembers
+                string job ; //jobName 
+                switch (i)
                 {
-                    var str = sestr.ToString();
-                    if (str.IndexOf(' ') <= 0) continue;
-                    var tar = new SeString(new List<Payload>());
-                    tar.Payloads.Add(item: new TextPayload(str.Substring(0, str.IndexOf(' ') + 1) + jobStrings[job]));
-                    Plugin.Common.WriteSeString(text->NodeText, tar);
-                    SimpleLog.Information(Plugin.Common.ReadSeString(text->NodeText.StringPtr));
+                    case 0:
+                        job = jobStrings[PluginInterface.ClientState.LocalPlayer.ClassJob.Id];
+                        break;
+                    default:
+                        job = jobStrings[partyMembers[i].ClassJob];
+                        break;
                 }
 
-                node = node->NextSiblingNode;
+                if (CombineStrings(str, job).ToString() == str) continue;
+                if (str.IndexOf(' ') <= 0) continue;
+                SimpleLog.Information(str+job);
+                switch (i)
+                {
+                    //local player
+                    case 0:
+                        Plugin.Common.WriteSeString(textsNodes[i]->NodeText,
+                            CombineStrings(str, run
+                                ? jobStrings[PluginInterface.ClientState.LocalPlayer.ClassJob.Id]
+                                : PluginInterface.ClientState.LocalPlayer.Name));
+                        break;
+
+                    //not-local player
+                    case > 0 when (tempNode->IsVisible): //visible
+                        Plugin.Common.WriteSeString(textsNodes[i]->NodeText, CombineStrings(str, job));
+                        break;
+
+                    default: //invisible
+                        Plugin.Common.WriteSeString(textsNodes[i]->NodeText, new SeString(new List<Payload>()));
+                        break;
+                }
+
+                tempNode = tempNode->NextSiblingNode;
             }
         }
 
-
-        private unsafe void HandleFocusTargetInfo(Addon addon, bool reset = false)
+        private static SeString CombineStrings(string payload1, string payload2)
         {
-            var addonStruct = (AtkUnitBase*) (addon.Address);
-            if (addonStruct->RootNode == null) return;
-
-
-            var rootNode = addonStruct->RootNode;
-            if (rootNode->ChildNode == null) return;
-            var child = rootNode->ChildNode;
-            for (var i = 0; i < 6; i++)
-            {
-                if (child->PrevSiblingNode == null) return;
-                child = child->PrevSiblingNode;
-            }
+            var tar = new SeString(new List<Payload>());
+            tar.Payloads.Add(item: new TextPayload(payload1.Substring(0, payload1.IndexOf(' ') + 1) + payload2));
+            return tar;
         }
 
 
@@ -211,7 +195,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             if (!Enabled) return;
             PluginInterface.Framework.OnUpdateEvent -= OnFrameworkUpdate;
             SimpleLog.Debug($"[{GetType().Name}] Reset");
-            //HandleBars(PluginInterface.Framework, true);
+            FindString(PluginInterface.Framework, false);
             Enabled = false;
         }
 
