@@ -29,17 +29,14 @@
         <ProjectReference Include="..\lib\FFXIVClientStructs\FFXIVClientStructs.csproj" Private="true" />
     </ItemGroup>
     <ItemGroup>
-        <Reference Include="Dalamud">
-            <Private>false</Private>
-            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
-        </Reference>
-        <Reference Include="Lumina">
-            <Private>false</Private>
-            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
-        </Reference>
-        <Reference Include="Lumina.Excel">
-            <Private>false</Private>
-            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
-        </Reference>
+      <Reference Include="Dalamud">
+        <HintPath>D:\OG\FF14\Dalamud\Dalamud.dll</HintPath>
+      </Reference>
+      <Reference Include="Lumina">
+        <HintPath>D:\OG\FF14\Dalamud\Lumina.dll</HintPath>
+      </Reference>
+      <Reference Include="Lumina.Excel">
+        <HintPath>D:\OG\FF14\Dalamud\Lumina.Excel.dll</HintPath>
+      </Reference>
     </ItemGroup>
 </Project>

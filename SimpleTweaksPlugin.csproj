@@ -40,6 +40,9 @@
         <Compile Remove="Debugging\**" />
     </ItemGroup>
     <ItemGroup>
+      <Compile Remove="Tweaks\UiAdjustment\ShiftTargetCastBarText - 复制.cs" />
+    </ItemGroup>
+    <ItemGroup>
       <PackageReference Include="ILMerge" Version="3.0.41" />
     </ItemGroup>
     <ItemGroup>
@@ -48,33 +51,27 @@
     </ItemGroup>
 	<Target Name="ILMerge" AfterTargets="PostBuildEvent">
 		<!-- Merge and rename -->
-		<Exec Command="$(ILMergeConsolePath) /target:library /out:$(TargetDir)/../SimpleTweaksPlugin.dll /log /lib:$(APPDATA)\XIVLauncher\addon\Hooks\dev $(TargetDir)SimpleTweaksPluginNoDeps.dll $(TargetDir)FFXIVClientStructs.dll $(TargetDir)FFXIVClientInterface.dll&#xD;&#xA;powershell -Command &quot;Remove-Item '$(TargetDir)\*.*';Move-Item '$(TargetDir)\..\SimpleTweaksPlugin.*' -Destination '$(TargetDir)';&quot;" />
+		<Exec Command="$(ILMergeConsolePath) /target:library /out:$(TargetDir)/../SimpleTweaksPlugin.dll /log /lib:D:\OG\FF14\Dalamud $(TargetDir)SimpleTweaksPluginNoDeps.dll $(TargetDir)FFXIVClientStructs.dll $(TargetDir)FFXIVClientInterface.dll&#xD;&#xA;powershell -Command &quot;Remove-Item '$(TargetDir)\*.*';Move-Item '$(TargetDir)\..\SimpleTweaksPlugin.*' -Destination '$(TargetDir)';&quot;" />
 	</Target>
 	<ItemGroup>
 		<Reference Include="Dalamud">
-            <Private>false</Private>
-            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
-		</Reference>
-		<Reference Include="Microsoft.CSharp" />
-        <Reference Include="Newtonsoft.Json">
-            <Private>false</Private>
-            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Newtonsoft.Json.dll</HintPath>
+		  <HintPath>D:\OG\FF14\Dalamud\Dalamud.dll</HintPath>
 		</Reference>
 		<Reference Include="ImGui.NET">
-            <Private>false</Private>
-            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>
+		  <HintPath>D:\OG\FF14\Dalamud\ImGui.NET.dll</HintPath>
 		</Reference>
 		<Reference Include="ImGuiScene">
-            <Private>false</Private>
-            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\ImGuiScene.dll</HintPath>
+		  <HintPath>D:\OG\FF14\Dalamud\ImGuiScene.dll</HintPath>
 		</Reference>
 		<Reference Include="Lumina">
-            <Private>false</Private>
-            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
+		  <HintPath>D:\OG\FF14\Dalamud\Lumina.dll</HintPath>
 		</Reference>
 		<Reference Include="Lumina.Excel">
-            <Private>false</Private>
-            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
+		  <HintPath>D:\OG\FF14\Dalamud\Lumina.Excel.dll</HintPath>
+		</Reference>
+		<Reference Include="Microsoft.CSharp" />
+		<Reference Include="Newtonsoft.Json">
+		  <HintPath>D:\OG\FF14\Dalamud\Newtonsoft.Json.dll</HintPath>
 		</Reference>
     </ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='Release'">
