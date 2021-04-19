@@ -16,7 +16,7 @@ namespace SimpleTweaksPlugin.Debugging {
         public override void Draw() {
 
             if (groupManager == null) {
-                groupManager = (GroupManager*) Plugin.PluginInterface.TargetModuleScanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 80 B8 ?? ?? ?? ?? ?? 76 50");
+                groupManager = (GroupManager*) Plugin.PluginInterface.TargetModuleScanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? 44 8B E7");
             }
             
             DebugManager.ClickToCopyText($"{(ulong) groupManager:X}"); ImGui.SameLine();

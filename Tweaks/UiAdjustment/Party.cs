@@ -1,13 +1,15 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using Dalamud.Game.Internal;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.FFXIV.Group;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
-using SeString = Dalamud.Game.Text.SeStringHandling.SeString;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using ImGuiNET;
+using Dalamud.Plugin;
+
+//using ImGuiNET;
 
 namespace SimpleTweaksPlugin
 {
@@ -74,9 +76,14 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private GroupManager* groupManager;
         private PartyMember* partyMembers;
         private AtkUnitBase* partyPointer;
-        private AtkResNode* partyNode;
+        private AtkComponentNode* partyNode;
         private AtkTextNode*[] textsNodes = new AtkTextNode*[8];
-        private AtkResNode* tempNode;
+        private AtkComponentNode* tempNode;
+        private string[] namecahce = new string[8];
+        private string[] partynames = new string[8];
+        private string[] partyjobs = new string[8];
+        private string localname;
+        private string localjob;
 
         public override string Name => "隐藏组队界面角色名";
         public override string Description => "隐藏组队界面角色名";
@@ -93,7 +100,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             try
             {
-                FindString(framework, true);
+                UpdateString(true);
             }
             catch (Exception ex)
             {
@@ -101,106 +108,160 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             }
         }
 
-        private unsafe void FindString(Framework framework, bool run)
+        private void FindAddress(Framework framework)
         {
-            var count = 0;
+            if (PluginInterface.ClientState.LocalPlayer== null) return;
+            localname = PluginInterface.ClientState.LocalPlayer.Name;
+
             if (groupManager == null)
             {
                 groupManager = (GroupManager*) Plugin.PluginInterface.TargetModuleScanner.GetStaticAddressFromSig(
                     "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 80 B8 ?? ?? ?? ?? ?? 76 50");
                 partyMembers = (PartyMember*) groupManager->PartyMembers;
-                count = groupManager->MemberCount;
+
+                //partyUI update handle sig"48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC ? 48 8B 7A ? 48 8B D9 49 8B 70 ? 48 8B 47"
             }
 
 
             if (partyNode == null)
             {
-                partyPointer = (AtkUnitBase*) (framework.Gui.GetAddonByName("_PartyList", 1).Address);
-                partyNode =
-                    partyPointer->RootNode->ChildNode->PrevSiblingNode->PrevSiblingNode->PrevSiblingNode->ChildNode;
-                while (partyNode->PrevSiblingNode != null) partyNode = partyNode->PrevSiblingNode;
-                tempNode = partyNode; //PartylistUI.player<1>.textnode 
+                partyPointer = (AtkUnitBase*) framework.Gui.GetAddonByName("_PartyList", 1).Address;
+                
+                partyNode = (AtkComponentNode*) partyPointer->UldManager.NodeList[17];
+                if (partyNode== null) return;
+                tempNode = partyNode; //PartylistUI.player<1>.atkComponetnode
                 for (var i = 0; i < 8; i++)
                 {
-                    var comp = (AtkComponentNode*) tempNode;
-                    var child = comp->Component->UldManager.RootNode;
-                    for (var j = 0; j <= 11; j++) child = child->PrevSiblingNode;
-                    var text = (AtkTextNode*) child->ChildNode;
+                    var text = (AtkTextNode*) tempNode->Component->UldManager.NodeList[15]->ChildNode;
                     textsNodes[i] = text;
-                    tempNode = tempNode->NextSiblingNode;
+
+                    tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
+                }
+            }
+            PluginInterface.Framework.OnUpdateEvent -= FindAddress;
+            PluginInterface.Framework.OnUpdateEvent += OnFrameworkUpdate;
+
+            
+        }
+
+        private int UpdatePartylist()
+        {
+            if (PluginInterface.ClientState.LocalPlayer != null)
+            {
+                localjob = jobStrings[PluginInterface.ClientState.LocalPlayer.ClassJob.Id];
+            }
+
+            var count = groupManager->MemberCount;
+            switch (count)
+            {
+                case 0:
+                {
+                    count = 1;
+                    partynames[0] = localname;
+                    partyjobs[0] = localjob;
+                    break;
+                }
+                default:
+                {
+                    for (var i = 0; i < count; i++)
+                    {
+                        partynames[i] = Plugin.Common.ReadSeString(partyMembers[i].Name).ToString(); //Name from partyList
+                        partyjobs[i] = jobStrings[partyMembers[i].ClassJob];
+                    }
+
+                    break;
                 }
             }
 
-            tempNode = partyNode;
+            return count;
+        }
 
-            for (var i = 0; i < 8; i++)
+        private static void SplitString(string str, bool first, out string part1, out string part2)
+        {
+            var index = first ? str.IndexOf(' ') : str.LastIndexOf(' ');
+            if (index == -1)
             {
-                var str = Plugin.Common.ReadSeString(textsNodes[i]->NodeText.StringPtr).ToString(); //UI string
-                var name = Plugin.Common.ReadSeString(partyMembers[i].Name).ToString(); //Name from partyMembers
-                string job ; //jobName 
-                switch (i)
-                {
-                    case 0:
-                        job = jobStrings[PluginInterface.ClientState.LocalPlayer.ClassJob.Id];
-                        break;
-                    default:
-                        job = jobStrings[partyMembers[i].ClassJob];
-                        break;
-                }
-
-                if (CombineStrings(str, job).ToString() == str) continue;
-                if (str.IndexOf(' ') <= 0) continue;
-                SimpleLog.Information(str+job);
-                switch (i)
-                {
-                    //local player
-                    case 0:
-                        Plugin.Common.WriteSeString(textsNodes[i]->NodeText,
-                            CombineStrings(str, run
-                                ? jobStrings[PluginInterface.ClientState.LocalPlayer.ClassJob.Id]
-                                : PluginInterface.ClientState.LocalPlayer.Name));
-                        break;
-
-                    //not-local player
-                    case > 0 when (tempNode->IsVisible): //visible
-                        Plugin.Common.WriteSeString(textsNodes[i]->NodeText, CombineStrings(str, job));
-                        break;
-
-                    default: //invisible
-                        Plugin.Common.WriteSeString(textsNodes[i]->NodeText, new SeString(new List<Payload>()));
-                        break;
-                }
-
-                tempNode = tempNode->NextSiblingNode;
+                part1 = str;
+                part2 = "";
+            }
+            else
+            {
+                part1 = str.Substring(0, index).Trim();
+                part2 = str.Substring(index + 1).Trim();
             }
         }
 
-        private static SeString CombineStrings(string payload1, string payload2)
+        private void UpdateString(bool run)
         {
-            var tar = new SeString(new List<Payload>());
-            tar.Payloads.Add(item: new TextPayload(payload1.Substring(0, payload1.IndexOf(' ') + 1) + payload2));
-            return tar;
+            tempNode = partyNode;
+            var partycount = UpdatePartylist();
+            for (var i = 0; i < 8; i++)
+            {
+                if (!tempNode->AtkResNode.IsVisible) break;
+                tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
+                var str = Plugin.Common.ReadSeString(textsNodes[i]->NodeText.StringPtr).ToString(); //UI string
+                if (str == "") break;
+                SplitString(str, true, out var lvl, out var namejob);
+                var index = Array.IndexOf(jobStrings, namejob);
+                if (index == -1) namecahce[i] = namejob; //namejob is a name
+
+                if (!run)
+                {
+                    Write(textsNodes[i], lvl + " " + namecahce[i]);
+                    continue;
+                }
+
+                var pos = Array.IndexOf(partynames, index == -1 ? namejob : namecahce[i], 0, partycount);
+                var job = pos switch
+                {
+                    -1 => jobStrings[0],
+                    _ => partyjobs[pos]
+                };
+
+                if (namejob != job) Write(textsNodes[i], lvl + " " + job);
+
+            }
+
+            if (!PluginInterface.ClientState.IsLoggedIn)
+            {
+                PluginInterface.Framework.OnUpdateEvent += FindAddress;
+                PluginInterface.Framework.OnUpdateEvent -= OnFrameworkUpdate;
+                groupManager = null;
+                partyNode = null;
+            }
+        }
+
+
+        private void Write(AtkTextNode* node, string payload)
+        {
+            var seString = new SeString(new List<Payload>());
+            seString.Payloads.Add(new TextPayload(payload));
+            Plugin.Common.WriteSeString(node->NodeText, seString);
         }
 
 
         public override void Enable()
         {
             if (Enabled) return;
-            PluginInterface.Framework.OnUpdateEvent += OnFrameworkUpdate;
+
+            PluginInterface.Framework.OnUpdateEvent += FindAddress;
             Enabled = true;
         }
 
         public override void Disable()
         {
             if (!Enabled) return;
+            PluginInterface.Framework.OnUpdateEvent -= FindAddress;
             PluginInterface.Framework.OnUpdateEvent -= OnFrameworkUpdate;
             SimpleLog.Debug($"[{GetType().Name}] Reset");
-            FindString(PluginInterface.Framework, false);
+            UpdateString(false);
             Enabled = false;
         }
+        
 
         public override void Dispose()
         {
+            PluginInterface.Framework.OnUpdateEvent -= FindAddress;
             PluginInterface.Framework.OnUpdateEvent -= OnFrameworkUpdate;
             Enabled = false;
             Ready = false;
