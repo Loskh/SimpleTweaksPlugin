@@ -108,6 +108,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private void FindAddress(Framework framework)
         {
+            
             if (PluginInterface.ClientState.Actors[0] == null) return;
             SimpleLog.Information("Addess Start");
 
@@ -132,11 +133,14 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
             try
             {
-                // Marshal.Copy(Common.Scanner.ScanText("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 44 0F B6 83"),actortable,0,424);
-                //player=Marshal.PtrToStructure<Actor>(actortable[0]);
-                //
                 if (PluginInterface.ClientState.Actors[0] == null) return;
+
                 partyListUpdaterHook ??= new Hook<PartylistUpdate>(
+                    Common.Scanner.ScanText(
+                        "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
+                    new PartylistUpdate(PartyListUpdateDeto));
+                if (partyListUpdaterHook.IsDisposed) 
+                    partyListUpdaterHook = new Hook<PartylistUpdate>(
                     Common.Scanner.ScanText(
                         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
                     new PartylistUpdate(PartyListUpdateDeto));
@@ -151,6 +155,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             PluginInterface.Framework.OnUpdateEvent -= FindAddress;
             SimpleLog.Information("Addess get");
             partyListUpdaterHook?.Enable();
+
         }
 
         private int UpdatePartylist()
@@ -236,8 +241,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private void Onlogout(object sender, EventArgs e)
         {
             PluginInterface.Framework.OnUpdateEvent += FindAddress;
-            partyListUpdaterHook?.Disable();
-            PluginInterface.ClientState.OnLogout -= Onlogout;
+            partyListUpdaterHook?.Dispose();
+            
         }
 
         private void Write(AtkTextNode* node, string payload)
