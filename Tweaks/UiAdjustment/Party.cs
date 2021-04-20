@@ -1,5 +1,4 @@
 ﻿using System;
-using System.CodeDom;
 using System.Collections.Generic;
 using Dalamud.Game.Internal;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -7,7 +6,11 @@ using FFXIVClientStructs.FFXIV.Group;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
-using Dalamud.Plugin;
+using Dalamud.Hooking;
+using SimpleTweaksPlugin.Helper;
+using System.Runtime.InteropServices;
+using Dalamud.Game.ClientState.Structs;
+using PartyMember = FFXIVClientStructs.FFXIV.Group.PartyMember;
 
 //using ImGuiNET;
 
@@ -72,18 +75,24 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             "UNKNOWN"
         };
 
+        private delegate void PartylistUpdate(long a1, long a2, long a3);
+
+        private Hook<PartylistUpdate> partyListUpdaterHook;
+
 
         private GroupManager* groupManager;
         private PartyMember* partyMembers;
         private AtkUnitBase* partyPointer;
         private AtkComponentNode* partyNode;
+
         private AtkTextNode*[] textsNodes = new AtkTextNode*[8];
-        private AtkComponentNode* tempNode;
+
         private string[] namecahce = new string[8];
         private string[] partynames = new string[8];
         private string[] partyjobs = new string[8];
         private string localname;
         private string localjob;
+        private IntPtr player;
 
         public override string Name => "隐藏组队界面角色名";
         public override string Description => "隐藏组队界面角色名";
@@ -96,76 +105,76 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         };
         */
 
-        private void OnFrameworkUpdate(Framework framework)
-        {
-            try
-            {
-                UpdateString(true);
-            }
-            catch (Exception ex)
-            {
-                Plugin.Error(this, ex);
-            }
-        }
 
         private void FindAddress(Framework framework)
         {
-            if (PluginInterface.ClientState.LocalPlayer== null) return;
-            localname = PluginInterface.ClientState.LocalPlayer.Name;
+            if (PluginInterface.ClientState.Actors[0] == null) return;
+            SimpleLog.Information("Addess Start");
 
-            if (groupManager == null)
+            groupManager = (GroupManager*) Plugin.PluginInterface.TargetModuleScanner.GetStaticAddressFromSig(
+                "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 80 B8 ?? ?? ?? ?? ?? 76 50");
+            partyMembers = (PartyMember*) groupManager->PartyMembers;
+
+            //partyUI update handle sig"48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC ? 48 8B 7A ? 48 8B D9 49 8B 70 ? 48 8B 47"
+
+
+            partyPointer = (AtkUnitBase*) framework.Gui.GetAddonByName("_PartyList", 1).Address;
+            partyNode = (AtkComponentNode*) partyPointer->UldManager.NodeList[17];
+            if (partyNode == null) return;
+            var tempNode = partyNode; //PartylistUI.player<1>.atkComponetnode
+            for (var i = 0; i < 8; i++)
             {
-                groupManager = (GroupManager*) Plugin.PluginInterface.TargetModuleScanner.GetStaticAddressFromSig(
-                    "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 80 B8 ?? ?? ?? ?? ?? 76 50");
-                partyMembers = (PartyMember*) groupManager->PartyMembers;
-
-                //partyUI update handle sig"48 89 5C 24 ? 48 89 74 24 ? 57 48 83 EC ? 48 8B 7A ? 48 8B D9 49 8B 70 ? 48 8B 47"
+                var text = (AtkTextNode*) tempNode->Component->UldManager.NodeList[15]->ChildNode;
+                textsNodes[i] = text;
+                tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
             }
 
 
-            if (partyNode == null)
+            try
             {
-                partyPointer = (AtkUnitBase*) framework.Gui.GetAddonByName("_PartyList", 1).Address;
-                
-                partyNode = (AtkComponentNode*) partyPointer->UldManager.NodeList[17];
-                if (partyNode== null) return;
-                tempNode = partyNode; //PartylistUI.player<1>.atkComponetnode
-                for (var i = 0; i < 8; i++)
-                {
-                    var text = (AtkTextNode*) tempNode->Component->UldManager.NodeList[15]->ChildNode;
-                    textsNodes[i] = text;
-
-                    tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
-                }
+                // Marshal.Copy(Common.Scanner.ScanText("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 44 0F B6 83"),actortable,0,424);
+                //player=Marshal.PtrToStructure<Actor>(actortable[0]);
+                //
+                if (PluginInterface.ClientState.Actors[0] == null) return;
+                partyListUpdaterHook ??= new Hook<PartylistUpdate>(
+                    Common.Scanner.ScanText(
+                        "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
+                    new PartylistUpdate(PartyListUpdateDeto));
+                player = PluginInterface.ClientState.Actors[0].Address;
             }
+            catch (Exception e)
+            {
+                SimpleLog.Error(e);
+                throw;
+            }
+
             PluginInterface.Framework.OnUpdateEvent -= FindAddress;
-            PluginInterface.Framework.OnUpdateEvent += OnFrameworkUpdate;
-
-            
+            SimpleLog.Information("Addess get");
+            partyListUpdaterHook?.Enable();
         }
 
         private int UpdatePartylist()
         {
-            if (PluginInterface.ClientState.LocalPlayer != null)
-            {
-                localjob = jobStrings[PluginInterface.ClientState.LocalPlayer.ClassJob.Id];
-            }
-
             var count = groupManager->MemberCount;
             switch (count)
             {
                 case 0:
                 {
+                    var localplayer = Marshal.PtrToStructure<Actor>(player);
+                    //Marshal.PtrToStructure<Actor>(actortable[0], player);
+                    partynames[0] = localplayer.Name;
+                    partyjobs[0] = jobStrings[localplayer.ClassJob];
+                    SimpleLog.Information("Only you " + partynames[0] + "@" + partyjobs[0]);
                     count = 1;
-                    partynames[0] = localname;
-                    partyjobs[0] = localjob;
                     break;
                 }
                 default:
                 {
                     for (var i = 0; i < count; i++)
                     {
-                        partynames[i] = Plugin.Common.ReadSeString(partyMembers[i].Name).ToString(); //Name from partyList
+                        SimpleLog.Information("Group Updating [" + i + "]");
+                        partynames[i] =
+                            Plugin.Common.ReadSeString(partyMembers[i].Name).ToString(); //Name from partyList
                         partyjobs[i] = jobStrings[partyMembers[i].ClassJob];
                     }
 
@@ -193,7 +202,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private void UpdateString(bool run)
         {
-            tempNode = partyNode;
+            SimpleLog.Information("Start updateString");
+            if (partyNode == null) return;
+            var tempNode = partyNode;
             var partycount = UpdatePartylist();
             for (var i = 0; i < 8; i++)
             {
@@ -219,18 +230,15 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 };
 
                 if (namejob != job) Write(textsNodes[i], lvl + " " + job);
-
-            }
-
-            if (!PluginInterface.ClientState.IsLoggedIn)
-            {
-                PluginInterface.Framework.OnUpdateEvent += FindAddress;
-                PluginInterface.Framework.OnUpdateEvent -= OnFrameworkUpdate;
-                groupManager = null;
-                partyNode = null;
             }
         }
 
+        private void Onlogout(object sender, EventArgs e)
+        {
+            PluginInterface.Framework.OnUpdateEvent += FindAddress;
+            partyListUpdaterHook?.Disable();
+            PluginInterface.ClientState.OnLogout -= Onlogout;
+        }
 
         private void Write(AtkTextNode* node, string payload)
         {
@@ -239,12 +247,20 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             Plugin.Common.WriteSeString(node->NodeText, seString);
         }
 
+        private void PartyListUpdateDeto(long a1, long a2, long a3)
+        {
+            partyListUpdaterHook.Original(a1, a2, a3);
+            SimpleLog.Information("Hook trigged");
+            UpdateString(true);
+        }
+
 
         public override void Enable()
         {
             if (Enabled) return;
-
+            //partyListUpdaterHook?.Enable();
             PluginInterface.Framework.OnUpdateEvent += FindAddress;
+            PluginInterface.ClientState.OnLogout += Onlogout;
             Enabled = true;
         }
 
@@ -252,17 +268,17 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             if (!Enabled) return;
             PluginInterface.Framework.OnUpdateEvent -= FindAddress;
-            PluginInterface.Framework.OnUpdateEvent -= OnFrameworkUpdate;
+            partyListUpdaterHook?.Disable();
+            if (PluginInterface.ClientState.Actors[0] == null) UpdateString(false);
             SimpleLog.Debug($"[{GetType().Name}] Reset");
-            UpdateString(false);
             Enabled = false;
         }
-        
+
 
         public override void Dispose()
         {
             PluginInterface.Framework.OnUpdateEvent -= FindAddress;
-            PluginInterface.Framework.OnUpdateEvent -= OnFrameworkUpdate;
+            partyListUpdaterHook?.Dispose();
             Enabled = false;
             Ready = false;
         }
