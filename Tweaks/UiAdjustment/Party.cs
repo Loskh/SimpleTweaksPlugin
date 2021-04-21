@@ -34,7 +34,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         public Configs Config => PluginConfig.UiAdjustments.HidePartyNames;
 
-        private readonly string[] jobStrings = new string[]
+        private static readonly string[] JobStrings = new string[]
         {
             "冒险者",
             "剑术师",
@@ -77,6 +77,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             "舞者",
             "UNKNOWN"
         };
+
+        private const string Partynumber = "";
 
         private delegate void PartyUiUpdate(long a1, long a2, long a3);
 
@@ -282,7 +284,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 {
                     var localplayer = Marshal.PtrToStructure<Actor>(player);
                     partynames[0] = localplayer.Name;
-                    partyjobs[0] = jobStrings[localplayer.ClassJob];
+                    partyjobs[0] = JobStrings[localplayer.ClassJob];
                     count = 1;
                     break;
                 }
@@ -292,7 +294,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     {
                         partynames[i] =
                             Plugin.Common.ReadSeString(partyMembers[i].Name).ToString(); //Name from partyList
-                        partyjobs[i] = jobStrings[partyMembers[i].ClassJob];
+                        partyjobs[i] = JobStrings[partyMembers[i].ClassJob];
                     }
 
                     break;
@@ -312,7 +314,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 var str = Plugin.Common.ReadSeString(textsNodes[i]->NodeText.StringPtr).ToString(); //UI string
                 if (str == "") break;
                 SplitString(str, true, out var lvl, out var namejob);
-                var index = Array.IndexOf(jobStrings, namejob);
+                var index = Array.IndexOf(JobStrings, namejob);
                 if (index == -1) namecahce[i] = namejob; //namejob is a name
 
                 if (!run)
@@ -324,7 +326,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 var pos = Array.IndexOf(partynames, index == -1 ? namejob : namecahce[i], 0, count);
                 var job = pos switch
                 {
-                    -1 => jobStrings[0],
+                    -1 => JobStrings[0],
                     _ => partyjobs[pos]
                 };
 
@@ -339,10 +341,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 SplitString(Plugin.Common.ReadSeString(tTextNode->NodeText.StringPtr).ToString(), false, out var tname,
                     out _);
                 var ttname = Plugin.Common.ReadSeString(ttTextNode->NodeText.StringPtr).ToString();
-
+                if (Partynumber.Contains(tname[0].ToString())) tname = tname.Substring(1);
                 var index = Array.IndexOf(partynames, tname, 0, count);
                 if (index != -1) WriteSeString(tTextNode, partyjobs[index]);
 
+                if (Partynumber.Contains(ttname[0].ToString())) ttname = ttname.Substring(1);
                 index = Array.IndexOf(partynames, ttname, 0, count);
                 if (index != -1) WriteSeString(ttTextNode, partyjobs[index]);
             }
@@ -356,13 +359,20 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             try
             {
-                SplitString(Plugin.Common.ReadSeString(focusTextNode->NodeText.StringPtr).ToString(), true, out var lvl,
-                    out var fname);
-                if (fname != "")
+                SplitString(Plugin.Common.ReadSeString(focusTextNode->NodeText.StringPtr).ToString(), true, out var part1,
+                    out var part2);
+                if (part2 != "")
                 {
-                    var index = Array.IndexOf(partynames, fname, 0, count);
+                    var index = Array.IndexOf(partynames, part2, 0, count);
 
-                    if (index != -1) WriteSeString(focusTextNode, lvl + " " + partyjobs[index]);
+                    if (index != -1) WriteSeString(focusTextNode, part1 + " " + partyjobs[index]);
+                }
+                else if (Partynumber.Contains(part1[0].ToString()))
+                {
+                    var number = part1[0];
+                    part1 = part1.Substring(1);
+                    var index = Array.IndexOf(partynames, part1, 0, count);
+                    if (index != -1) WriteSeString(focusTextNode, number + " " + partyjobs[index]);
                 }
             }
             catch (Exception e)
