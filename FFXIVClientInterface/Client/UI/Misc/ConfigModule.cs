@@ -24,7 +24,7 @@ namespace FFXIVClientInterface.Client.UI.Misc {
         [FieldOffset(0x00F0)] public Utf8String UnknownString_00F0;
         [FieldOffset(0x0190)] public Utf8String UnknownString_0190;
         
-        [FieldOffset(0xAB60)] public fixed byte OptionCache[ConfigOptionCount * 16];
+        [FieldOffset(0xAAE0)] public fixed byte OptionCache[ConfigOptionCount * 16];
     }
 
 }

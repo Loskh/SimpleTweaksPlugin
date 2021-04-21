@@ -28,22 +28,22 @@ namespace SimpleTweaksPlugin.Sheets
         {
             base.PopulateData( parser, gameData, language );
             
-            LevelSyncFlag = parser.ReadColumn< byte >( 89 );
+            LevelSyncFlag = parser.ReadColumn< byte >( 90 );
             
             BaseParam = new BaseParamStruct[ 6 ];
             for( var i = 0; i < 6; i++ )
             {
                 BaseParam[ i ] = new BaseParamStruct();
-                BaseParam[ i ].BaseParam = new LazyRow<ExtendedBaseParam>(gameData, parser.ReadColumn< byte >( 59 + ( i * 2 + 0 ) ), language);
-                BaseParam[ i ].Value = parser.ReadColumn< short >( 59 + ( i * 2 + 1 ) );
+                BaseParam[ i ].BaseParam = new LazyRow<ExtendedBaseParam>(gameData, parser.ReadColumn< byte >( 60 + ( i * 2 + 0 ) ), language);
+                BaseParam[ i ].Value = parser.ReadColumn< short >( 60 + ( i * 2 + 1 ) );
             }
 
             BaseParamSpecial = new BaseParamStruct[ 6 ];
             for( var i = 0; i < 6; i++ )
             {
                 BaseParamSpecial[ i ] = new BaseParamStruct();
-                BaseParamSpecial[ i ].BaseParam = new LazyRow<ExtendedBaseParam>(gameData, parser.ReadColumn< byte >( 73 + ( i * 2 + 0 ) ), language);
-                BaseParamSpecial[ i ].Value = parser.ReadColumn< short >( 73 + ( i * 2 + 1 ) );
+                BaseParamSpecial[ i ].BaseParam = new LazyRow<ExtendedBaseParam>(gameData, parser.ReadColumn< byte >( 74 + ( i * 2 + 0 ) ), language);
+                BaseParamSpecial[ i ].Value = parser.ReadColumn< short >( 74 + ( i * 2 + 1 ) );
             }
 
         }
