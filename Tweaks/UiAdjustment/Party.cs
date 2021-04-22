@@ -341,11 +341,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 SplitString(Plugin.Common.ReadSeString(tTextNode->NodeText.StringPtr).ToString(), false, out var tname,
                     out _);
                 var ttname = Plugin.Common.ReadSeString(ttTextNode->NodeText.StringPtr).ToString();
-                if (Partynumber.Contains(tname[0].ToString())) tname = tname.Substring(1);
+                if (Partynumber.Contains(tname.Substring(0,1))) tname = tname.Substring(1);
                 var index = Array.IndexOf(partynames, tname, 0, count);
                 if (index != -1) WriteSeString(tTextNode, partyjobs[index]);
 
-                if (Partynumber.Contains(ttname[0].ToString())) ttname = ttname.Substring(1);
+                if (Partynumber.Contains(ttname.Substring(0,1))) ttname = ttname.Substring(1);
                 index = Array.IndexOf(partynames, ttname, 0, count);
                 if (index != -1) WriteSeString(ttTextNode, partyjobs[index]);
             }
@@ -367,9 +367,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
                     if (index != -1) WriteSeString(focusTextNode, part1 + " " + partyjobs[index]);
                 }
-                else if (Partynumber.Contains(part1[0].ToString()))
+                else if (Partynumber.Contains(part1.Substring(0, 1)))
                 {
-                    var number = part1[0];
+                    var number = part1.Substring(0, 1);
                     part1 = part1.Substring(1);
                     var index = Array.IndexOf(partynames, part1, 0, count);
                     if (index != -1) WriteSeString(focusTextNode, number + " " + partyjobs[index]);
