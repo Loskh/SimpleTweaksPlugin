@@ -127,11 +127,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     Common.Scanner.ScanText(
                         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
                     new PartyUiUpdate(PartyListUpdateDeto));
-                //if (partyUiUpdateHook.IsDisposed)
-                //    partyUiUpdateHook = new Hook<PartyUiUpdate>(
-                //        Common.Scanner.ScanText(
-                //            "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
-                //        new PartyUiUpdate(PartyListUpdateDeto));
+
                 if (Enabled) partyUiUpdateHook?.Enable();
                 else partyUiUpdateHook?.Disable();
 
@@ -139,21 +135,14 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     Common.Scanner.ScanText(
                         "40 55 57 41 56 48 83 EC 40 48 8B 6A 48 48 8B F9 4D 8B 70 40 48 85 ED 0F 84 ?? ?? ?? ?? 4D 85 F6 0F 84 ?? ?? ?? ?? 48 8B 45 20 48 89 74 24 ?? 4C 89 7C 24 ?? 44 0F B6 B9 ?? ?? ?? ?? 83 38 00 8B 70 08 0F 94 C0"),
                     new MaintargetUiUpdate(MaintargetUpdateDeto));
-                //if (mainTargetUpdateHook.IsDisposed)
-                //    mainTargetUpdateHook = new Hook<MaintargetUiUpdate>(
-                //        Common.Scanner.ScanText(
-                //            "40 55 57 41 56 48 83 EC 40 48 8B 6A 48 48 8B F9 4D 8B 70 40 48 85 ED 0F 84 ?? ?? ?? ?? 4D 85 F6 0F 84 ?? ?? ?? ?? 48 8B 45 20 48 89 74 24 ?? 4C 89 7C 24 ?? 44 0F B6 B9 ?? ?? ?? ?? 83 38 00 8B 70 08 0F 94 C0"),
-                //        new MaintargetUiUpdate(MaintargetUpdateDeto));
+
                 if (Config.Target) mainTargetUpdateHook?.Enable();
                 else mainTargetUpdateHook?.Disable();
 
                 focusUpdateHook ??= new Hook<FocusUiUpdate>(
                     Common.Scanner.ScanText("40 53 41 54 41 56 41 57 48 83 EC 78 4C 8B 7A 48"),
                     new FocusUiUpdate(FocusUpdateDeto));
-                //if (focusUpdateHook.IsDisposed)
-                //    focusUpdateHook = new Hook<FocusUiUpdate>(
-                //        Common.Scanner.ScanText("40 53 41 54 41 56 41 57 48 83 EC 78 4C 8B 7A 48"),
-                //        new FocusUiUpdate(FocusUpdateDeto));
+
                 if (Config.Focus) focusUpdateHook?.Enable();
                 else focusUpdateHook?.Disable();
             }
@@ -307,7 +296,15 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             if (partyNode == null) return;
             var tempNode = partyNode;
             UpdatePartylist();
-            for (var i = 0; i < 8; i++)
+
+            var localplayer = Marshal.PtrToStructure<Actor>(player);
+            namecahce[0] = localplayer.Name;
+            var str0 = Plugin.Common.ReadSeString(textsNodes[0]->NodeText.StringPtr).ToString();
+            str0 = str0.Split(' ')[0];
+            WriteSeString(textsNodes[0], str0 + " " + JobStrings[localplayer.ClassJob]);
+            tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
+
+            for (var i = 1; i < 8; i++)
             {
                 if (!tempNode->AtkResNode.IsVisible) break; //Need test! textnodes seems to change visibility
                 tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
@@ -343,16 +340,18 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 var ttname = Plugin.Common.ReadSeString(ttTextNode->NodeText.StringPtr).ToString();
                 if (tname.Length >= 1)
                 {
-                    if (Partynumber.Contains(tname.Substring(0,1))) tname = tname.Substring(1);
                     var index = Array.IndexOf(partynames, tname, 0, count);
                     if (index != -1) WriteSeString(tTextNode, partyjobs[index]);
                 }
-                
+
                 if (ttname.Length >= 1)
                 {
-                    if (Partynumber.Contains(ttname.Substring(0, 1))) ttname = ttname.Substring(1);
+                    var number = ttname.Substring(0, 1);
+                    if (Partynumber.Contains(number)) ttname = ttname.Substring(1);
                     var index = Array.IndexOf(partynames, ttname, 0, count);
-                    if (index != -1) WriteSeString(ttTextNode, partyjobs[index]);
+                    if (index != -1)
+                        WriteSeString(ttTextNode,
+                            Partynumber.Contains(number) ? number + partyjobs[index] : partyjobs[index]);
                 }
             }
             catch (Exception e)
@@ -365,13 +364,20 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             try
             {
-                SplitString(Plugin.Common.ReadSeString(focusTextNode->NodeText.StringPtr).ToString(), true, out var part1,
+                SplitString(Plugin.Common.ReadSeString(focusTextNode->NodeText.StringPtr).ToString(), true,
+                    out var part1,
                     out var part2);
                 if (part2 != "")
                 {
+                    var number = part2.Substring(0, 1);
+                    if (Partynumber.Contains(number)) part2 = part2.Substring(1);
                     var index = Array.IndexOf(partynames, part2, 0, count);
 
-                    if (index != -1) WriteSeString(focusTextNode, part1 + " " + partyjobs[index]);
+                    if (index != -1)
+                        WriteSeString(focusTextNode,
+                            Partynumber.Contains(number)
+                                ? part1 + " " + number + partyjobs[index]
+                                : part1 + " " + partyjobs[index]);
                 }
                 else if (part1.Length >= 1)
                 {
