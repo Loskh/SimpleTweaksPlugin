@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using Dalamud.Game.Internal;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using FFXIVClientStructs.FFXIV.Group;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
@@ -11,7 +10,6 @@ using SimpleTweaksPlugin.Helper;
 using System.Runtime.InteropServices;
 using Dalamud.Game.ClientState.Structs;
 using ImGuiNET;
-using PartyMember = FFXIVClientStructs.FFXIV.Group.PartyMember;
 
 
 namespace SimpleTweaksPlugin
@@ -78,30 +76,25 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             "UNKNOWN"
         };
 
-        private const string Partynumber = "";
+        private const string PartyNumber = "";
 
         private delegate void PartyUiUpdate(long a1, long a2, long a3);
 
-        private delegate void MaintargetUiUpdate(long a1, long a2, long a3);
+        private delegate void MainTargetUiUpdate(long a1, long a2, long a3);
 
         private delegate long FocusUiUpdate(long a1, long a2, long a3);
 
         private Hook<PartyUiUpdate> partyUiUpdateHook;
-        private Hook<MaintargetUiUpdate> mainTargetUpdateHook;
+        private Hook<MainTargetUiUpdate> mainTargetUpdateHook;
         private Hook<FocusUiUpdate> focusUpdateHook;
 
-        private GroupManager* groupManager;
-        private PartyMember* partyMembers;
+        private Actor player;
+        private readonly PartyList partyList = new(Common.PluginInterface);
         private AtkComponentNode* partyNode;
-        private AtkTextNode*[] textsNodes = new AtkTextNode*[8];
-        private string[] namecahce = new string[8];
-        private string[] partynames = new string[8];
-        private string[] partyjobs = new string[8];
-        private int count;
-        private IntPtr player;
         private AtkTextNode* focusTextNode;
         private AtkTextNode* tTextNode;
         private AtkTextNode* ttTextNode;
+        private readonly AtkTextNode*[] textsNodes = new AtkTextNode*[8];
 
         public override string Name => "隐藏组队界面角色名";
         public override string Description => "隐藏组队界面角色名";
@@ -126,22 +119,22 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 partyUiUpdateHook ??= new Hook<PartyUiUpdate>(
                     Common.Scanner.ScanText(
                         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
-                    new PartyUiUpdate(PartyListUpdateDeto));
+                    new PartyUiUpdate(PartyListUpdateDelegate));
 
                 if (Enabled) partyUiUpdateHook?.Enable();
                 else partyUiUpdateHook?.Disable();
 
-                mainTargetUpdateHook ??= new Hook<MaintargetUiUpdate>(
+                mainTargetUpdateHook ??= new Hook<MainTargetUiUpdate>(
                     Common.Scanner.ScanText(
                         "40 55 57 41 56 48 83 EC 40 48 8B 6A 48 48 8B F9 4D 8B 70 40 48 85 ED 0F 84 ?? ?? ?? ?? 4D 85 F6 0F 84 ?? ?? ?? ?? 48 8B 45 20 48 89 74 24 ?? 4C 89 7C 24 ?? 44 0F B6 B9 ?? ?? ?? ?? 83 38 00 8B 70 08 0F 94 C0"),
-                    new MaintargetUiUpdate(MaintargetUpdateDeto));
+                    new MainTargetUiUpdate(MainTargetUpdateDelegate));
 
                 if (Config.Target) mainTargetUpdateHook?.Enable();
                 else mainTargetUpdateHook?.Disable();
 
                 focusUpdateHook ??= new Hook<FocusUiUpdate>(
                     Common.Scanner.ScanText("40 53 41 54 41 56 41 57 48 83 EC 78 4C 8B 7A 48"),
-                    new FocusUiUpdate(FocusUpdateDeto));
+                    new FocusUiUpdate(FocusUpdateDelegate));
 
                 if (Config.Focus) focusUpdateHook?.Enable();
                 else focusUpdateHook?.Disable();
@@ -174,21 +167,21 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         }
 
 
-        #region detor
+        #region detors
 
-        private void PartyListUpdateDeto(long a1, long a2, long a3)
+        private void PartyListUpdateDelegate(long a1, long a2, long a3)
         {
             partyUiUpdateHook.Original(a1, a2, a3);
-            UpdatePartyUi(true);
+            UpdatePartyUi();
         }
 
-        private void MaintargetUpdateDeto(long a1, long a2, long a3)
+        private void MainTargetUpdateDelegate(long a1, long a2, long a3)
         {
             mainTargetUpdateHook.Original(a1, a2, a3);
             UpdateTarget();
         }
 
-        private long FocusUpdateDeto(long a1, long a2, long a3)
+        private long FocusUpdateDelegate(long a1, long a2, long a3)
         {
             var ret = focusUpdateHook.Original(a1, a2, a3);
             UpdateFocus();
@@ -228,14 +221,10 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             if (PluginInterface.ClientState.Actors[0] == null) return;
 
-            groupManager = (GroupManager*) Plugin.PluginInterface.TargetModuleScanner.GetStaticAddressFromSig(
-                "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 80 B8 ?? ?? ?? ?? ?? 76 50");
-            partyMembers = (PartyMember*) groupManager->PartyMembers;
-
             var partyPointer = (AtkUnitBase*) framework.Gui.GetAddonByName("_PartyList", 1).Address;
             partyNode = (AtkComponentNode*) partyPointer->UldManager.NodeList[17];
             if (partyNode == null) return;
-            var tempNode = partyNode; //PartylistUI.player<1>.atkComponetnode
+            var tempNode = partyNode; //PartyListUI.player<1>.atkComponentNode
             for (var i = 0; i < 8; i++)
             {
                 var text = (AtkTextNode*) tempNode->Component->UldManager.NodeList[15]->ChildNode;
@@ -243,91 +232,52 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
             }
 
-            try
-            {
-                var maintargetui = (AtkUnitBase*) framework.Gui.GetAddonByName("_TargetInfoMainTarget", 1).Address;
-                tTextNode = (AtkTextNode*) maintargetui->UldManager.NodeList[8];
-                ttTextNode = (AtkTextNode*) maintargetui->UldManager.NodeList[12];
-                focusTextNode =
-                    (AtkTextNode*) ((AtkUnitBase*) framework.Gui.GetAddonByName("_FocusTargetInfo", 1).Address)->
-                    UldManager.NodeList[10];
-            }
-            catch (Exception e)
-            {
-                SimpleLog.Error(e);
-            }
+            var mainTargetUi = (AtkUnitBase*) framework.Gui.GetAddonByName("_TargetInfoMainTarget", 1).Address;
+            tTextNode = (AtkTextNode*) mainTargetUi->UldManager.NodeList[8];
+            ttTextNode = (AtkTextNode*) mainTargetUi->UldManager.NodeList[12];
+            focusTextNode =
+                (AtkTextNode*) ((AtkUnitBase*) framework.Gui.GetAddonByName("_FocusTargetInfo", 1).Address)->UldManager
+                .NodeList[10];
 
-            player = PluginInterface.ClientState.Actors[0].Address;
+            player = Marshal.PtrToStructure<Actor>(PluginInterface.ClientState.Actors[0].Address);
 
             RefreshHooks();
 
             PluginInterface.Framework.OnUpdateEvent -= FindAddress;
         }
 
-        private void UpdatePartylist()
-        {
-            count = groupManager->MemberCount;
-            switch (count)
-            {
-                case 0:
-                {
-                    var localplayer = Marshal.PtrToStructure<Actor>(player);
-                    partynames[0] = localplayer.Name;
-                    partyjobs[0] = JobStrings[localplayer.ClassJob];
-                    count = 1;
-                    break;
-                }
-                default:
-                {
-                    for (var i = 0; i < count; i++)
-                    {
-                        partynames[i] =
-                            Plugin.Common.ReadSeString(partyMembers[i].Name).ToString(); //Name from partyList
-                        partyjobs[i] = JobStrings[partyMembers[i].ClassJob];
-                    }
 
-                    break;
+        private void UpdatePartyUi()
+        {
+            try
+            {
+                if (partyNode == null) return;
+                var tempNode = partyNode;
+
+                var str0 = Plugin.Common.ReadSeString(textsNodes[0]->NodeText.StringPtr).ToString();
+                str0 = str0.Split(' ')[0];
+                WriteSeString(textsNodes[0], str0 + " " + JobStrings[player.ClassJob]);
+
+                for (var i = 1; i < 8; i++)
+                {
+                    tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
+                    if (!tempNode->AtkResNode.IsVisible) break;
+                    var str = Plugin.Common.ReadSeString(textsNodes[i]->NodeText.StringPtr).ToString(); //UI string
+                    if (str == "") break;
+                    SplitString(str, true, out var lvl, out var namejob);
+
+                    var index = partyList.IndexOf(namejob);
+                    if (index != -1)
+                    {
+                        var job = JobStrings[partyList[index].ClassJob];
+                        WriteSeString(textsNodes[i], lvl + " " + job);
+                    }
                 }
             }
-        }
-
-        private void UpdatePartyUi(bool run)
-        {
-            if (partyNode == null) return;
-            var tempNode = partyNode;
-            UpdatePartylist();
-
-            var localplayer = Marshal.PtrToStructure<Actor>(player);
-            namecahce[0] = localplayer.Name;
-            var str0 = Plugin.Common.ReadSeString(textsNodes[0]->NodeText.StringPtr).ToString();
-            str0 = str0.Split(' ')[0];
-            WriteSeString(textsNodes[0], str0 + " " + JobStrings[localplayer.ClassJob]);
-            tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
-
-            for (var i = 1; i < 8; i++)
+            catch (Exception e)
             {
-                if (!tempNode->AtkResNode.IsVisible) break; //Need test! textnodes seems to change visibility
-                tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
-                var str = Plugin.Common.ReadSeString(textsNodes[i]->NodeText.StringPtr).ToString(); //UI string
-                if (str == "") break;
-                SplitString(str, true, out var lvl, out var namejob);
-                var index = Array.IndexOf(JobStrings, namejob);
-                if (index == -1) namecahce[i] = namejob; //namejob is a name
-
-                if (!run)
-                {
-                    WriteSeString(textsNodes[i], lvl + " " + namecahce[i]);
-                    continue;
-                }
-
-                var pos = Array.IndexOf(partynames, index == -1 ? namejob : namecahce[i], 0, count);
-                var job = pos switch
-                {
-                    -1 => JobStrings[0],
-                    _ => partyjobs[pos]
-                };
-
-                if (namejob != job) WriteSeString(textsNodes[i], lvl + " " + job);
+                SimpleLog.Error(e);
+                throw;
             }
         }
 
@@ -340,18 +290,26 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 var ttname = Plugin.Common.ReadSeString(ttTextNode->NodeText.StringPtr).ToString();
                 if (tname.Length >= 1)
                 {
-                    var index = Array.IndexOf(partynames, tname, 0, count);
-                    if (index != -1) WriteSeString(tTextNode, partyjobs[index]);
+                    var index = partyList.IndexOf(tname);
+
+                    if (index != -1)
+                    {
+                        var job = JobStrings[partyList[index].ClassJob];
+                        WriteSeString(tTextNode, job);
+                    }
                 }
 
                 if (ttname.Length >= 1)
                 {
                     var number = ttname.Substring(0, 1);
-                    if (Partynumber.Contains(number)) ttname = ttname.Substring(1);
-                    var index = Array.IndexOf(partynames, ttname, 0, count);
+                    if (PartyNumber.Contains(number)) ttname = ttname.Substring(1);
+                    var index = partyList.IndexOf(ttname);
                     if (index != -1)
+                    {
+                        var job = JobStrings[partyList[index].ClassJob];
                         WriteSeString(ttTextNode,
-                            Partynumber.Contains(number) ? number + partyjobs[index] : partyjobs[index]);
+                            PartyNumber.Contains(number) ? number + job : job);
+                    }
                 }
             }
             catch (Exception e)
@@ -370,23 +328,31 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 if (part2 != "")
                 {
                     var number = part2.Substring(0, 1);
-                    if (Partynumber.Contains(number)) part2 = part2.Substring(1);
-                    var index = Array.IndexOf(partynames, part2, 0, count);
+                    if (PartyNumber.Contains(number)) part2 = part2.Substring(1);
+                    var index = partyList.IndexOf(part2);
 
                     if (index != -1)
+                    {
+                        var job = JobStrings[partyList[index].ClassJob];
                         WriteSeString(focusTextNode,
-                            Partynumber.Contains(number)
-                                ? part1 + " " + number + partyjobs[index]
-                                : part1 + " " + partyjobs[index]);
+                            PartyNumber.Contains(number)
+                                ? part1 + " " + number + job
+                                : part1 + " " + job);
+                    }
                 }
                 else if (part1.Length >= 1)
                 {
-                    if (Partynumber.Contains(part1.Substring(0, 1)))
+                    if (PartyNumber.Contains(part1.Substring(0, 1)))
                     {
                         var number = part1.Substring(0, 1);
                         part1 = part1.Substring(1);
-                        var index = Array.IndexOf(partynames, part1, 0, count);
-                        if (index != -1) WriteSeString(focusTextNode, number + " " + partyjobs[index]);
+                        var index = partyList.IndexOf(part1);
+                        if (index != -1)
+                        {
+                            var job = JobStrings[partyList[index].ClassJob];
+                            WriteSeString(focusTextNode,
+                                number + " " + job);
+                        }
                     }
                 }
             }
@@ -399,7 +365,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         #region Framework
 
-        private void Onlogout(object sender, EventArgs e)
+        private void OnlogOut(object sender, EventArgs e)
         {
             PluginInterface.Framework.OnUpdateEvent += FindAddress;
             DisposeHooks();
@@ -409,7 +375,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             if (Enabled) return;
             PluginInterface.Framework.OnUpdateEvent += FindAddress;
-            PluginInterface.ClientState.OnLogout += Onlogout;
+            PluginInterface.ClientState.OnLogout += OnlogOut;
             Enabled = true;
         }
 
@@ -417,9 +383,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             if (!Enabled) return;
             PluginInterface.Framework.OnUpdateEvent -= FindAddress;
-            PluginInterface.ClientState.OnLogout -= Onlogout;
+            PluginInterface.ClientState.OnLogout -= OnlogOut;
             DisableHooks();
-            //if (PluginInterface.ClientState.Actors[0] == null) UpdatePartyUi(false);
             SimpleLog.Debug($"[{GetType().Name}] Reset");
             Enabled = false;
         }
@@ -428,7 +393,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         public override void Dispose()
         {
             PluginInterface.Framework.OnUpdateEvent -= FindAddress;
-            PluginInterface.ClientState.OnLogout -= Onlogout;
+            PluginInterface.ClientState.OnLogout -= OnlogOut;
             DisposeHooks();
             Enabled = false;
             Ready = false;
