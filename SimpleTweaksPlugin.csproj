@@ -39,7 +39,7 @@
     <ItemGroup Condition="'$(Configuration)'=='Release'">
         <Compile Remove="Debugging\**" />
     </ItemGroup>
-	<ItemGroup>
+    <ItemGroup>
       <PackageReference Include="ILMerge" Version="3.0.41" />
     </ItemGroup>
     <ItemGroup>
@@ -48,30 +48,36 @@
     </ItemGroup>
 	<Target Name="ILMerge" AfterTargets="PostBuildEvent">
 		<!-- Merge and rename -->
-		<Exec Command="$(ILMergeConsolePath) /target:library /out:$(TargetDir)/../SimpleTweaksPlugin.dll /log /lib:$(DalamudLibPath) $(TargetDir)SimpleTweaksPluginNoDeps.dll $(TargetDir)FFXIVClientStructs.dll $(TargetDir)FFXIVClientInterface.dll&#xD;&#xA;powershell -Command &quot;Remove-Item '$(TargetDir)\*.*';Move-Item '$(TargetDir)\..\SimpleTweaksPlugin.dll' -Destination '$(TargetDir)';&quot;" />
+		<Exec Command="$(ILMergeConsolePath) /target:library /out:$(TargetDir)/../SimpleTweaksPlugin.dll /log /lib:$(APPDATA)\XIVLauncher\addon\Hooks\dev $(TargetDir)SimpleTweaksPluginNoDeps.dll $(TargetDir)FFXIVClientStructs.dll $(TargetDir)FFXIVClientInterface.dll&#xD;&#xA;powershell -Command &quot;Remove-Item '$(TargetDir)\*.*';Move-Item '$(TargetDir)\..\SimpleTweaksPlugin.*' -Destination '$(TargetDir)';&quot;" />
 	</Target>
 	<ItemGroup>
 		<Reference Include="Dalamud">
-		  <HintPath>$(DalamudLibPath)\Dalamud.dll</HintPath>
-		</Reference>
-		<Reference Include="ImGui.NET">
-		  <HintPath>$(DalamudLibPath)\ImGui.NET.dll</HintPath>
-		</Reference>
-		<Reference Include="ImGuiScene">
-		  <HintPath>$(DalamudLibPath)\ImGuiScene.dll</HintPath>
-		</Reference>
-		<Reference Include="Lumina">
-		  <HintPath>$(DalamudLibPath)\Lumina.dll</HintPath>
-		</Reference>
-		<Reference Include="Lumina.Excel">
-		  <HintPath>$(DalamudLibPath)\Lumina.Excel.dll</HintPath>
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Dalamud.dll</HintPath>
 		</Reference>
 		<Reference Include="Microsoft.CSharp" />
-		<Reference Include="Newtonsoft.Json">
-		  <HintPath>$(DalamudLibPath)\Newtonsoft.Json.dll</HintPath>
+        <Reference Include="Newtonsoft.Json">
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Newtonsoft.Json.dll</HintPath>
+		</Reference>
+		<Reference Include="ImGui.NET">
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\ImGui.NET.dll</HintPath>
+		</Reference>
+		<Reference Include="ImGuiScene">
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\ImGuiScene.dll</HintPath>
+		</Reference>
+		<Reference Include="Lumina">
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.dll</HintPath>
+		</Reference>
+		<Reference Include="Lumina.Excel">
+            <Private>false</Private>
+            <HintPath>$(APPDATA)\XIVLauncher\addon\Hooks\dev\Lumina.Excel.dll</HintPath>
 		</Reference>
     </ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='Release'">
-		<Exec Command="powershell -Command &quot;New-Item -ItemType Directory -Force -Path '$(ProjectDir)Publish'; $a=Get-Item '$(TargetDir)SimpleTweaksPlugin.dll'; $jsonTemplate=Get-Content '$(ProjectDir)\$(ProjectName).template.json' | ConvertFrom-Json; $jsonTemplate.AssemblyVersion=$a.VersionInfo.FileVersion; $jsonTemplate.Description = $jsonTemplate.Description -join '\n'; ($jsonTemplate | ConvertTo-Json).Replace('\\n','\n') | Out-File '$(ProjectDir)\Publish\$(ProjectName).json' -Encoding utf8;Compress-Archive -Path '$(ProjectDir)\Publish\$(ProjectName).json','$(TargetDir)\*' -DestinationPath '$(ProjectDir)Publish\$(ProjectName).zip' -Force&quot;" />
+		<Exec Command="powershell -Command &quot;New-Item -ItemType Directory -Force -Path '$(ProjectDir)Publish'; $a=Get-Item '$(TargetDir)SimpleTweaksPlugin.dll'; $jsonTemplate=Get-Content '$(ProjectDir)\$(ProjectName).template.json' | ConvertFrom-Json; $jsonTemplate.AssemblyVersion=$a.VersionInfo.FileVersion; $jsonTemplate.Description = $jsonTemplate.Description -join '\n'; ($jsonTemplate | ConvertTo-Json).Replace('\\n','\n') | Out-File '$(ProjectDir)\Publish\$(ProjectName).json' -Encoding utf8;Compress-Archive -Path '$(ProjectDir)\Publish\$(ProjectName).json','$(TargetDir)\*' -DestinationPath '$(ProjectDir)Publish\latest.zip' -Force&quot;" />
 	</Target>
 </Project>
