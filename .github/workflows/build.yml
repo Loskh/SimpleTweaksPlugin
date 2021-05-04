@@ -19,6 +19,10 @@ jobs:
         
       - name: Restore NuGet Packages
         run: nuget restore SimpleTweaksPlugin.sln
+        
+      - name: Set env
+        run: |
+          echo "DalamudLibPath=$env:AppData\XIVLauncher\addon\Hooks\dev" >> $GITHUB_ENV
 
       - name: Download Dalamud
         run: |
@@ -26,8 +30,6 @@ jobs:
           $fileName = "dalamud_" + $remoteVersion + ".zip"
           Invoke-WebRequest -Uri https://dalamud-1253720819.cos.ap-nanjing.myqcloud.com/$fileName -OutFile latest.zip
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev\"
-          echo "$env:AppData\XIVLauncher\addon\Hooks\dev\" >> $env:DalamudLibPath
-          echo $env:DalamudLibPath
                       
       - name: Build
         run: msbuild SimpleTweaksPlugin.sln /p:Configuration=Release
