@@ -15,13 +15,13 @@ namespace SimpleTweaksPlugin
 {
     public partial class UiAdjustmentsConfig
     {
-        public HidePartyNames.Configs HidePartyNames = new();
+        public PartyListAdjustments.Configs PartyListAdjustments = new();
     }
 }
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 {
-    public unsafe class HidePartyNames : UiAdjustments.SubTweak
+    public unsafe class PartyListAdjustments : UiAdjustments.SubTweak
     {
         public class Configs
         {
@@ -31,7 +31,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             public bool PartyName;
         }
 
-        public Configs Config => PluginConfig.UiAdjustments.HidePartyNames;
+        public Configs Config => PluginConfig.UiAdjustments.PartyListAdjustments;
 
         private static readonly string[] JobStrings = new string[]
         {
@@ -104,8 +104,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private readonly UIForegroundPayload uiNoColor =
             new(new DataManager(Common.PluginInterface.Data.Language), 0);
 
-        public override string Name => "隐藏组队界面角色名";
-        public override string Description => "隐藏组队界面角色名";
+        public override string Name => "队伍列表修改";
+        public override string Description => "队伍列表相关内容修改";
 
 
         protected override DrawConfigDelegate DrawConfigTree => (ref bool changed) =>
