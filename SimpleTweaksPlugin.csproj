@@ -39,10 +39,7 @@
     <ItemGroup Condition="'$(Configuration)'=='Release'">
         <Compile Remove="Debugging\**" />
     </ItemGroup>
-    <ItemGroup>
-      <Compile Remove="Tweaks\UiAdjustment\ShiftTargetCastBarText - 复制.cs" />
-    </ItemGroup>
-    <ItemGroup>
+	<ItemGroup>
       <PackageReference Include="ILMerge" Version="3.0.41" />
     </ItemGroup>
     <ItemGroup>
@@ -51,27 +48,27 @@
     </ItemGroup>
 	<Target Name="ILMerge" AfterTargets="PostBuildEvent">
 		<!-- Merge and rename -->
-		<Exec Command="$(ILMergeConsolePath) /target:library /out:$(TargetDir)/../SimpleTweaksPlugin.dll /log /lib:D:\OG\FF14\Dalamud $(TargetDir)SimpleTweaksPluginNoDeps.dll $(TargetDir)FFXIVClientStructs.dll $(TargetDir)FFXIVClientInterface.dll&#xD;&#xA;powershell -Command &quot;Remove-Item '$(TargetDir)\*.*';Move-Item '$(TargetDir)\..\SimpleTweaksPlugin.dll' -Destination '$(TargetDir)';&quot;" />
+		<Exec Command="$(ILMergeConsolePath) /target:library /out:$(TargetDir)/../SimpleTweaksPlugin.dll /log /lib:$(DalamudLibPath) $(TargetDir)SimpleTweaksPluginNoDeps.dll $(TargetDir)FFXIVClientStructs.dll $(TargetDir)FFXIVClientInterface.dll&#xD;&#xA;powershell -Command &quot;Remove-Item '$(TargetDir)\*.*';Move-Item '$(TargetDir)\..\SimpleTweaksPlugin.dll' -Destination '$(TargetDir)';&quot;" />
 	</Target>
 	<ItemGroup>
 		<Reference Include="Dalamud">
-		  <HintPath>D:\OG\FF14\Dalamud\Dalamud.dll</HintPath>
+		  <HintPath>$(DalamudLibPath)\Dalamud.dll</HintPath>
 		</Reference>
 		<Reference Include="ImGui.NET">
-		  <HintPath>D:\OG\FF14\Dalamud\ImGui.NET.dll</HintPath>
+		  <HintPath>$(DalamudLibPath)\ImGui.NET.dll</HintPath>
 		</Reference>
 		<Reference Include="ImGuiScene">
-		  <HintPath>D:\OG\FF14\Dalamud\ImGuiScene.dll</HintPath>
+		  <HintPath>$(DalamudLibPath)\ImGuiScene.dll</HintPath>
 		</Reference>
 		<Reference Include="Lumina">
-		  <HintPath>D:\OG\FF14\Dalamud\Lumina.dll</HintPath>
+		  <HintPath>$(DalamudLibPath)\Lumina.dll</HintPath>
 		</Reference>
 		<Reference Include="Lumina.Excel">
-		  <HintPath>D:\OG\FF14\Dalamud\Lumina.Excel.dll</HintPath>
+		  <HintPath>$(DalamudLibPath)\Lumina.Excel.dll</HintPath>
 		</Reference>
 		<Reference Include="Microsoft.CSharp" />
 		<Reference Include="Newtonsoft.Json">
-		  <HintPath>D:\OG\FF14\Dalamud\Newtonsoft.Json.dll</HintPath>
+		  <HintPath>$(DalamudLibPath)\Newtonsoft.Json.dll</HintPath>
 		</Reference>
     </ItemGroup>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(Configuration)'=='Release'">
