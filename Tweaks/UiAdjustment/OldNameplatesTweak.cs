@@ -5,8 +5,8 @@ using SimpleTweaksPlugin.Helper;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class OldNameplatesTweak : UiAdjustments.SubTweak {
-        public override string Name => "Old Nameplates Tweak";
-        public override string Description => "Reverts the change to nameplates.";
+        public override string Name => "老版本姓名版(5.5之前谁开谁炸)";
+        public override string Description => "显示5.5版本前的姓名版样式.";
         protected override string Author => "aers";
 
         private delegate void AddonNameplateOnUpdateDelegate(AddonNamePlate* thisPtr, NumberArrayData** numberData,
@@ -14,8 +14,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         private Hook<AddonNameplateOnUpdateDelegate> addonNameplateOnUpdateHook;
 
         public override void Enable() {
-            addonNameplateOnUpdateHook ??= new Hook<AddonNameplateOnUpdateDelegate>(Common.Scanner.ScanText("48 8B C4 41 56 48 81 EC ?? ?? ?? ?? 48 89 58 F0"), new AddonNameplateOnUpdateDelegate(AddonNameplateOnUpdateDetour));
-            addonNameplateOnUpdateHook?.Enable();
+            //addonNameplateOnUpdateHook ??= new Hook<AddonNameplateOnUpdateDelegate>(Common.Scanner.ScanText("48 8B C4 41 56 48 81 EC ?? ?? ?? ?? 48 89 58 F0"), new AddonNameplateOnUpdateDelegate(AddonNameplateOnUpdateDetour));
+            //addonNameplateOnUpdateHook?.Enable();
             base.Enable();
         }
         
