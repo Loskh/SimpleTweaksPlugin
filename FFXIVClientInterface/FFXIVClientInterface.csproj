@@ -30,13 +30,13 @@
     </ItemGroup>
     <ItemGroup>
       <Reference Include="Dalamud">
-        <HintPath>D:\OG\FF14\Dalamud\Dalamud.dll</HintPath>
+        <HintPath>$(DalamudLibPath)\Dalamud.dll</HintPath>
       </Reference>
       <Reference Include="Lumina">
-        <HintPath>D:\OG\FF14\Dalamud\Lumina.dll</HintPath>
+        <HintPath>$(DalamudLibPath)\Lumina.dll</HintPath>
       </Reference>
       <Reference Include="Lumina.Excel">
-        <HintPath>D:\OG\FF14\Dalamud\Lumina.Excel.dll</HintPath>
+        <HintPath>$(DalamudLibPath)\Lumina.Excel.dll</HintPath>
       </Reference>
     </ItemGroup>
 </Project>
