@@ -21,18 +21,11 @@ jobs:
 
       - name: Download Dalamud
         run: |
-          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
+          $remoteVersion = Invoke-WebRequest -Uri https://dalamud-1253720819.cos.ap-nanjing.myqcloud.com/dalamud.ver 
+          $fileName = "dalamud_" + $remoteVersion + ".zip"
+          Invoke-WebRequest -Uri https://dalamud-1253720819.cos.ap-nanjing.myqcloud.com/$fileName -OutFile latest.zip
           Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev\"
-
+          Expand-Archive -Force latest.zip "$env:DalamudLibPath\"
+            
       - name: Build
         run: msbuild SimpleTweaksPlugin.sln /p:Configuration=Release
-
-      - name: Extract Publish
-        run: |
-          Expand-Archive -Force ./Publish/latest.zip ./Artifact
-          
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v2.2.1
-        with:
-          name: pr-artifact
-          path: ./Artifact/*

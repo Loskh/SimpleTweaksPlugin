@@ -1,7 +1,6 @@
 name: Build SimpleTweaksPlugin
 on:
   push:
-    branches: 'main'
 jobs:
   build:
     if: "! contains(toJSON(github.event.commits.*.message), '[skip-ci]')"
@@ -22,25 +21,12 @@ jobs:
         run: nuget restore SimpleTweaksPlugin.sln
 
       - name: Download Dalamud
-        if: "!contains(github.event.head_commit.message, '[stg]')"
         run: |
-          Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/latest.zip -OutFile latest.zip
-          Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
-
-      - name: Download Dalamud staging
-        if: "contains(github.event.head_commit.message, '[stg]')"
-        run: |
-            Invoke-WebRequest -Uri https://goatcorp.github.io/dalamud-distrib/stg/latest.zip -OutFile latest.zip
-            Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev"
+          $remoteVersion = Invoke-WebRequest -Uri https://dalamud-1253720819.cos.ap-nanjing.myqcloud.com/dalamud.ver 
+          $fileName = "dalamud_" + $remoteVersion + ".zip"
+          Invoke-WebRequest -Uri https://dalamud-1253720819.cos.ap-nanjing.myqcloud.com/$fileName -OutFile latest.zip
+          Expand-Archive -Force latest.zip "$env:AppData\XIVLauncher\addon\Hooks\dev\"
+          Expand-Archive -Force latest.zip "$env:DalamudLibPath\"
             
       - name: Build
         run: msbuild SimpleTweaksPlugin.sln /p:Configuration=Release
-
-      - name: Extract Publish
-        run: |
-          Expand-Archive -Force ./Publish/latest.zip ./Artifact
-          
-      - name: Upload Build Artifact
-        uses: actions/upload-artifact@v2.2.1
-        with:
-          path: ./Artifact/*
