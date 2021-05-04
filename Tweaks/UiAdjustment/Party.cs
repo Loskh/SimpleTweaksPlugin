@@ -8,7 +8,6 @@ using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
 using SimpleTweaksPlugin.Helper;
 using Dalamud.Data;
-using Dalamud.Game.ClientState;
 using ImGuiNET;
 
 
@@ -238,6 +237,10 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             if (member.CurrentHp == 1)
             {
                 se.Payloads.Add(new TextPayload("1"));
+            }
+            else if (member.MaxHp == 0)
+            {
+                se.Payloads.Add(new TextPayload("???"));
             }
             else
             {

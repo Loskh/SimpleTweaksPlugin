@@ -98,14 +98,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         public string CharacterName { get; private set; }
 
         //public Actor Actor { get; private set; }
-
         public uint ClassJob { get; private set; }
         public string Address { get; private set; }
-
         public uint ShieldPercent { get; private set; }
-
         public uint Hpp { get; private set; }
         public uint CurrentHp { get; private set; }
+
+        public uint MaxHp { get; private set; }
 
         internal static PartyMember RegularMember(ActorTable table, IntPtr memberAddress)
         {
@@ -120,6 +119,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 Address = memberAddress.ToString("X"),
                 ShieldPercent = Marshal.ReadByte(memberAddress, 0X207), //Or (byte)actor.Address+0x1977
                 CurrentHp = currentHp,
+                MaxHp = maxHp,
                 Hpp = maxHp == 0 ? 0 : currentHp * 100 / maxHp
             };
             return member;
@@ -136,6 +136,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 Address = crossMemberAddress.ToString("X"),
                 ShieldPercent = 0,
                 Hpp = 100,
+                MaxHp = 0,
                 CurrentHp = 0
             };
             return member;
@@ -167,7 +168,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 Address = companionMemberAddress.ToString("X"),
                 ShieldPercent = actor != null ? Marshal.ReadByte(actor.Address, 0x1977) : (uint) 0,
                 Hpp = maxHp == 0 ? 0 : currentHp * 100 / maxHp,
-                CurrentHp = currentHp
+                CurrentHp = currentHp,
+                MaxHp = maxHp
             };
             return member;
         }
@@ -185,6 +187,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 Address = player?.Address.ToString("X") ?? "",
                 ShieldPercent = player != null ? Marshal.ReadByte(player.Address, 0x1977) : (uint) 0,
                 CurrentHp = currentHp,
+                MaxHp = maxHp,
                 Hpp = maxHp == 0 ? 0 : currentHp * 100 / maxHp
             };
         }
@@ -223,19 +226,19 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private readonly GetCompanionMemberCountDelegate getCompanionMemberCount;
         private readonly GetCrossMemberByGrpIndexDelegate getCrossMemberByGrpIndex;
 
-        private readonly IntPtr GroupManager =
+        private readonly IntPtr groupManager =
             Common.Scanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 80 B8 ?? ?? ?? ?? ?? 76 50");
 
         //IntPtr CrossRealmGroupManagerPtr = Common.Scanner.GetStaticAddressFromSig("77 71 48 8B 05", 2);
-        private readonly IntPtr CompanionManagerPtr =
+        private readonly IntPtr companionManagerPtr =
             Common.Scanner.GetStaticAddressFromSig("4C 8B 15 ?? ?? ?? ?? 4C 8B C9");
 
-        private readonly IntPtr GetCrossRealmMemberCount = Common.Scanner.ScanText("E8 ?? ?? ?? ?? 3C 01 77 4B");
+        private readonly IntPtr crossRealmMemberCount = Common.Scanner.ScanText("E8 ?? ?? ?? ?? 3C 01 77 4B");
 
-        private readonly IntPtr GetCrossMemberByGrpIndex =
+        private readonly IntPtr crossMemberByGrpIndex =
             Common.Scanner.ScanText("E8 ?? ?? ?? ?? 44 89 7C 24 ?? 4C 8B C8");
 
-        private readonly IntPtr GetCompanionMemberCounts = Common.Scanner.ScanText("E8 ?? ?? ?? ?? 8B D3 85 C0");
+        private readonly IntPtr companionMemberCounts = Common.Scanner.ScanText("E8 ?? ?? ?? ?? 8B D3 85 C0");
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PartyList"/> class.
@@ -245,11 +248,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             this.dalamud = dalamud;
             getCrossPartyMemberCount =
-                Marshal.GetDelegateForFunctionPointer<GetPartyMemberCountDelegate>(GetCrossRealmMemberCount);
+                Marshal.GetDelegateForFunctionPointer<GetPartyMemberCountDelegate>(crossRealmMemberCount);
             getCrossMemberByGrpIndex =
-                Marshal.GetDelegateForFunctionPointer<GetCrossMemberByGrpIndexDelegate>(GetCrossMemberByGrpIndex);
+                Marshal.GetDelegateForFunctionPointer<GetCrossMemberByGrpIndexDelegate>(crossMemberByGrpIndex);
             getCompanionMemberCount =
-                Marshal.GetDelegateForFunctionPointer<GetCompanionMemberCountDelegate>(GetCompanionMemberCounts);
+                Marshal.GetDelegateForFunctionPointer<GetCompanionMemberCountDelegate>(companionMemberCounts);
         }
 
         private delegate byte GetPartyMemberCountDelegate();
@@ -304,7 +307,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
                 if (GetRegularMemberCount() > 1)
                 {
-                    var member = GroupManager + 0x230 * index;
+                    var member = groupManager + 0x230 * index;
                     return PartyMember.RegularMember(dalamud.ClientState.Actors, member);
                 }
 
@@ -312,11 +315,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 {
                     if (index >= 3) // return a dummy player member if it's not one of the npcs
                         return PartyMember.LocalPlayerMember(dalamud);
-                    var member = Marshal.ReadIntPtr(CompanionManagerPtr) + 0x198 * index;
+                    var member = Marshal.ReadIntPtr(companionManagerPtr) + 0x198 * index;
                     return PartyMember.CompanionMember(dalamud.ClientState.Actors, member);
                 }
 
-                return (Count == 1) ? PartyMember.LocalPlayerMember(dalamud) : null;
+                return Count == 1 ? PartyMember.LocalPlayerMember(dalamud) : null;
             }
         }
 
@@ -339,13 +342,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private byte GetRegularMemberCount()
         {
-            return Marshal.ReadByte(GroupManager, 0x3D5C);
+            return Marshal.ReadByte(groupManager, 0x3D5C);
         }
 
         private byte GetCompanionMemberCount()
         {
-            var manager = Marshal.ReadIntPtr(CompanionManagerPtr);
-            return manager == IntPtr.Zero ? (byte) 0 : getCompanionMemberCount(CompanionManagerPtr);
+            var manager = Marshal.ReadIntPtr(companionManagerPtr);
+            return manager == IntPtr.Zero ? (byte) 0 : getCompanionMemberCount(companionManagerPtr);
         }
     }
 }
