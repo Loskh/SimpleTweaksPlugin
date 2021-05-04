@@ -10,6 +10,85 @@ using Common = SimpleTweaksPlugin.Helper.Common;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 {
+    #region Structure
+
+    //[StructLayout(LayoutKind.Explicit, Size = 0x50)]
+    //public struct CrossRealmMember
+    //{
+    //    [FieldOffset(0x10)] private int ObjectID;
+    //    [FieldOffset(0x18)] private byte Level;
+    //    [FieldOffset(0x1A)] private ushort CurrentWorld; //need check
+    //    [FieldOffset(0x1C)] private ushort HomeWorld; //need check
+    //    [FieldOffset(0x1E)] private byte ClassJob;
+    //    [FieldOffset(0x1F)] private byte ObjectKind; //need check
+    //    [FieldOffset(0x20)] private byte Unknown1; //Hex 10
+    //    [FieldOffset(0x21)] private byte Unknown2; //01 or 02 need check
+    //    [FieldOffset(0x22)] private string CharacterName;
+    //}
+
+    //[StructLayout(LayoutKind.Explicit, Size = 0x230)]
+    //public struct RegularMember
+    //{
+    //    [FieldOffset(0x0)] private BuffList BuffList;
+    //    [FieldOffset(0x190)] public float X;
+    //    [FieldOffset(0x194)] public float Y;
+    //    [FieldOffset(0x198)] public float Z;
+    //    [FieldOffset(0x1A0)] public long Unk_1A0;
+    //    [FieldOffset(0x1A8)] public uint ObjectID;
+    //    [FieldOffset(0x1AC)] public uint Unk_ObjectID_1;
+    //    [FieldOffset(0x1B0)] public uint Unk_ObjectID_2;
+    //    [FieldOffset(0x1B4)] public uint CurrentHP;
+    //    [FieldOffset(0x1B8)] public uint MaxHP;
+    //    [FieldOffset(0x1BC)] public ushort CurrentMP;
+    //    [FieldOffset(0x1BE)] public ushort MaxMP;
+    //    [FieldOffset(0x1C0)] public ushort TerritoryType; // player zone
+    //    [FieldOffset(0x1C2)] public ushort CurrentWorld; // seems to be 0x63/99, no idea what it is
+    //    [FieldOffset(0x1C4)] public string CharacterName; // byte Name[0x40] character name string
+    //    [FieldOffset(0x204)] public byte Sex;
+    //    [FieldOffset(0x205)] public byte ClassJob;
+    //    [FieldOffset(0x206)] public byte Level;
+
+    //    [FieldOffset(0X207)] private byte ShieldPercent;
+
+    //    // 0x18 byte struct at 0x208
+    //    [FieldOffset(0x208)] public byte Unk_Struct_208__0;
+    //    [FieldOffset(0x20C)] public uint Unk_Struct_208__4;
+    //    [FieldOffset(0x210)] public ushort Unk_Struct_208__8;
+    //    [FieldOffset(0x214)] public uint Unk_Struct_208__C;
+    //    [FieldOffset(0x218)] public ushort Unk_Struct_208__10;
+    //    [FieldOffset(0x21A)] public ushort Unk_Struct_208__14;
+    //    [FieldOffset(0x220)] public byte Unk_220;
+    //}
+
+    //[StructLayout(LayoutKind.Explicit, Size = 0xC)]
+    //public struct Buff
+    //{
+    //    [FieldOffset(0x0)] public ushort StatusID;
+    //    [FieldOffset(0x2)] public byte Param;
+    //    [FieldOffset(0x3)] public byte StackCount;
+    //    [FieldOffset(0x4)] public float RemainingTime;
+
+    //    [FieldOffset(0x8)] public uint SourceID; 
+    //    // objectID matching the entity that cast the effect - regens will be from the white mage ID etc
+    //}
+
+    //[StructLayout(LayoutKind.Explicit, Size = 0x190)]
+    //public unsafe struct BuffList
+    //{
+    //    [FieldOffset(0x0)]
+    //    public IntPtr*
+    //        Owner; // THIS IS NULL IN THE PARTY LIST, this class is used elsewhere and the pointer is filled in
+
+    //    [FieldOffset(0x8)] public fixed byte Buffs[0xC * 30];
+    //    [FieldOffset(0x170)] public uint Unk_170;
+    //    [FieldOffset(0x174)] public ushort Unk_174;
+    //    [FieldOffset(0x178)] public long Unk_178;
+    //    [FieldOffset(0x180)] public byte Unk_180;
+    //}
+
+    #endregion
+
+
     public class PartyMember
     {
         private PartyMember()
@@ -21,14 +100,27 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         //public Actor Actor { get; private set; }
 
         public uint ClassJob { get; private set; }
+        public string Address { get; private set; }
+
+        public uint ShieldPercent { get; private set; }
+
+        public uint Hpp { get; private set; }
+        public uint CurrentHp { get; private set; }
 
         internal static PartyMember RegularMember(ActorTable table, IntPtr memberAddress)
         {
             //var actor = GetActorById(table, Marshal.ReadInt32(memberAddress, 0x1A8));
+            var maxHp = (uint) Marshal.ReadInt16(memberAddress, 0x1B8);
+            var currentHp = (uint) Marshal.ReadInt16(memberAddress, 0x1B4);
             var member = new PartyMember
             {
+                //Actor = actor,
                 CharacterName = PtrToStringUtf8(memberAddress + 0x1C4),
-                ClassJob = Marshal.ReadByte(memberAddress, 0x205)
+                ClassJob = Marshal.ReadByte(memberAddress, 0x205),
+                Address = memberAddress.ToString("X"),
+                ShieldPercent = Marshal.ReadByte(memberAddress, 0X207), //Or (byte)actor.Address+0x1977
+                CurrentHp = currentHp,
+                Hpp = maxHp == 0 ? 0 : currentHp * 100 / maxHp
             };
             return member;
         }
@@ -38,8 +130,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             //var actor = GetActorById(table, Marshal.ReadInt32(crossMemberAddress, 0x10));
             var member = new PartyMember
             {
+                //Actor = actor,
                 CharacterName = PtrToStringUtf8(crossMemberAddress + 0x22),
-                ClassJob = Marshal.ReadByte(crossMemberAddress, 0x1E)
+                ClassJob = Marshal.ReadByte(crossMemberAddress, 0x1E),
+                Address = crossMemberAddress.ToString("X"),
+                ShieldPercent = 0,
+                Hpp = 100,
+                CurrentHp = 0
             };
             return member;
         }
@@ -47,13 +144,30 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         internal static PartyMember CompanionMember(ActorTable table, IntPtr companionMemberAddress)
         {
             var actor = GetActorById(table, Marshal.ReadInt32(companionMemberAddress, 0));
+            uint maxHp, currentHp;
+            if (actor != null)
+            {
+                var act = Marshal.PtrToStructure<Dalamud.Game.ClientState.Structs.Actor>(actor.Address);
+                maxHp = (uint) act.MaxHp;
+                currentHp = (uint) act.CurrentHp;
+            }
+            else
+            {
+                maxHp = 0;
+                currentHp = 0;
+            }
+
             var member = new PartyMember
             {
                 //Actor = actor,
                 CharacterName = actor?.Name ?? string.Empty,
                 ClassJob = actor != null
                     ? Marshal.PtrToStructure<Dalamud.Game.ClientState.Structs.Actor>(actor.Address).ClassJob
-                    : (uint) 0
+                    : (uint) 0,
+                Address = companionMemberAddress.ToString("X"),
+                ShieldPercent = actor != null ? Marshal.ReadByte(actor.Address, 0x1977) : (uint) 0,
+                Hpp = maxHp == 0 ? 0 : currentHp * 100 / maxHp,
+                CurrentHp = currentHp
             };
             return member;
         }
@@ -61,11 +175,17 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         internal static PartyMember LocalPlayerMember(DalamudPluginInterface dalamud)
         {
             var player = dalamud.ClientState.LocalPlayer;
+            var maxHp = (uint) (player?.MaxHp ?? 0);
+            var currentHp = (uint) (player?.CurrentHp ?? 0);
             return new PartyMember()
             {
                 //Actor = player,
                 CharacterName = player?.Name ?? string.Empty,
-                ClassJob = player?.ClassJob.Id ?? 0
+                ClassJob = player?.ClassJob.Id ?? 0,
+                Address = player?.Address.ToString("X") ?? "",
+                ShieldPercent = player != null ? Marshal.ReadByte(player.Address, 0x1977) : (uint) 0,
+                CurrentHp = currentHp,
+                Hpp = maxHp == 0 ? 0 : currentHp * 100 / maxHp
             };
         }
 
@@ -103,14 +223,19 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private readonly GetCompanionMemberCountDelegate getCompanionMemberCount;
         private readonly GetCrossMemberByGrpIndexDelegate getCrossMemberByGrpIndex;
 
-        private IntPtr GroupManager =
+        private readonly IntPtr GroupManager =
             Common.Scanner.GetStaticAddressFromSig("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 80 B8 ?? ?? ?? ?? ?? 76 50");
 
         //IntPtr CrossRealmGroupManagerPtr = Common.Scanner.GetStaticAddressFromSig("77 71 48 8B 05", 2);
-        private IntPtr CompanionManagerPtr = Common.Scanner.GetStaticAddressFromSig("4C 8B 15 ?? ?? ?? ?? 4C 8B C9");
-        private IntPtr GetCrossRealmMemberCount = Common.Scanner.ScanText("E8 ?? ?? ?? ?? 3C 01 77 4B");
-        private IntPtr GetCrossMemberByGrpIndex = Common.Scanner.ScanText("E8 ?? ?? ?? ?? 44 89 7C 24 ?? 4C 8B C8");
-        private IntPtr GetCompanionMemberCounts = Common.Scanner.ScanText("E8 ?? ?? ?? ?? 8B D3 85 C0");
+        private readonly IntPtr CompanionManagerPtr =
+            Common.Scanner.GetStaticAddressFromSig("4C 8B 15 ?? ?? ?? ?? 4C 8B C9");
+
+        private readonly IntPtr GetCrossRealmMemberCount = Common.Scanner.ScanText("E8 ?? ?? ?? ?? 3C 01 77 4B");
+
+        private readonly IntPtr GetCrossMemberByGrpIndex =
+            Common.Scanner.ScanText("E8 ?? ?? ?? ?? 44 89 7C 24 ?? 4C 8B C8");
+
+        private readonly IntPtr GetCompanionMemberCounts = Common.Scanner.ScanText("E8 ?? ?? ?? ?? 8B D3 85 C0");
 
         /// <summary>
         /// Initializes a new instance of the <see cref="PartyList"/> class.
@@ -136,6 +261,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         public int IndexOf(string name)
         {
+            if (Count == 1 && name == PartyMember.LocalPlayerMember(dalamud).CharacterName) return 0;
             for (var i = 0; i < Count; i++)
                 if (this[i].CharacterName == name)
                     return i;
@@ -190,12 +316,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     return PartyMember.CompanionMember(dalamud.ClientState.Actors, member);
                 }
 
-                if (Count == 1 && index == 0)
-                {
-                    return PartyMember.LocalPlayerMember(dalamud);
-                }
-
-                return null;
+                return (Count == 1) ? PartyMember.LocalPlayerMember(dalamud) : null;
             }
         }
 
@@ -224,9 +345,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private byte GetCompanionMemberCount()
         {
             var manager = Marshal.ReadIntPtr(CompanionManagerPtr);
-            if (manager == IntPtr.Zero)
-                return 0;
-            return getCompanionMemberCount(CompanionManagerPtr);
+            return manager == IntPtr.Zero ? (byte) 0 : getCompanionMemberCount(CompanionManagerPtr);
         }
     }
 }

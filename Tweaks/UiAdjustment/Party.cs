@@ -7,8 +7,8 @@ using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
 using SimpleTweaksPlugin.Helper;
-using System.Runtime.InteropServices;
-using Dalamud.Game.ClientState.Structs;
+using Dalamud.Data;
+using Dalamud.Game.ClientState;
 using ImGuiNET;
 
 
@@ -26,8 +26,10 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
     {
         public class Configs
         {
-            public bool Target = true;
-            public bool Focus = true;
+            public bool Target;
+            public bool Focus;
+            public bool HpPercent = true;
+            public bool PartyName;
         }
 
         public Configs Config => PluginConfig.UiAdjustments.HidePartyNames;
@@ -78,7 +80,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private const string PartyNumber = "";
 
-        private delegate void PartyUiUpdate(long a1, long a2, long a3);
+        private delegate long PartyUiUpdate(long a1, long a2, long a3);
 
         private delegate void MainTargetUiUpdate(long a1, long a2, long a3);
 
@@ -88,13 +90,20 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private Hook<MainTargetUiUpdate> mainTargetUpdateHook;
         private Hook<FocusUiUpdate> focusUpdateHook;
 
-        private Actor player;
         private readonly PartyList partyList = new(Common.PluginInterface);
         private AtkComponentNode* partyNode;
         private AtkTextNode* focusTextNode;
         private AtkTextNode* tTextNode;
         private AtkTextNode* ttTextNode;
         private readonly AtkTextNode*[] textsNodes = new AtkTextNode*[8];
+        private readonly AtkTextNode*[] hpNodes = new AtkTextNode*[8];
+        private string[] namecache = new string[8];
+
+        private readonly UIForegroundPayload uiYellow =
+            new(new DataManager(Common.PluginInterface.Data.Language), 559);
+
+        private readonly UIForegroundPayload uiNoColor =
+            new(new DataManager(Common.PluginInterface.Data.Language), 0);
 
         public override string Name => "隐藏组队界面角色名";
         public override string Description => "隐藏组队界面角色名";
@@ -102,9 +111,16 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         protected override DrawConfigDelegate DrawConfigTree => (ref bool changed) =>
         {
-            changed |= ImGui.Checkbox("隐藏目标栏的队友姓名", ref Config.Target);
-            ImGui.SameLine();
-            changed |= ImGui.Checkbox("隐藏焦点栏的队友姓名", ref Config.Focus);
+            changed |= ImGui.Checkbox("HP及盾值百分比显示", ref Config.HpPercent);
+            if (Config.PartyName || Config.Target || Config.Focus)
+            {
+                changed |= ImGui.Checkbox("隐藏队伍栏的队友姓名", ref Config.PartyName);
+                ImGui.SameLine();
+                changed |= ImGui.Checkbox("隐藏目标栏的队友姓名", ref Config.Target);
+                ImGui.SameLine();
+                changed |= ImGui.Checkbox("隐藏焦点栏的队友姓名", ref Config.Focus);
+            }
+
 
             if (changed) RefreshHooks();
         };
@@ -121,7 +137,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
                     new PartyUiUpdate(PartyListUpdateDelegate));
 
-                if (Enabled) partyUiUpdateHook?.Enable();
+                if (Config.HpPercent || Config.PartyName) partyUiUpdateHook?.Enable();
                 else partyUiUpdateHook?.Disable();
 
                 mainTargetUpdateHook ??= new Hook<MainTargetUiUpdate>(
@@ -169,10 +185,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         #region detors
 
-        private void PartyListUpdateDelegate(long a1, long a2, long a3)
+        private long PartyListUpdateDelegate(long a1, long a2, long a3)
         {
-            partyUiUpdateHook.Original(a1, a2, a3);
+            var tar = partyUiUpdateHook.Original(a1, a2, a3);
             UpdatePartyUi();
+            return tar;
         }
 
         private void MainTargetUpdateDelegate(long a1, long a2, long a3)
@@ -207,11 +224,36 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             }
         }
 
-        private void WriteSeString(AtkTextNode* node, string payload)
+        private void SetName(AtkTextNode* node, string payload)
         {
             var seString = new SeString(new List<Payload>());
             seString.Payloads.Add(new TextPayload(payload));
             Plugin.Common.WriteSeString(node->NodeText, seString);
+        }
+
+        private void SetHp(AtkTextNode* node, PartyMember member)
+        {
+            if (!Config.HpPercent) return;
+            var se = new SeString(new List<Payload>());
+            if (member.CurrentHp == 1)
+            {
+                se.Payloads.Add(new TextPayload("1"));
+            }
+            else
+            {
+                se.Payloads.Add(new TextPayload(member.Hpp.ToString()));
+                if (member.ShieldPercent != 0)
+                {
+                    se.Payloads.Add(new TextPayload("+"));
+                    se.Payloads.Add(uiYellow);
+                    se.Payloads.Add(new TextPayload(member.ShieldPercent.ToString()));
+                    se.Payloads.Add(uiNoColor);
+                }
+
+                se.Payloads.Add(new TextPayload("%"));
+            }
+
+            Plugin.Common.WriteSeString(node->NodeText, se);
         }
 
         #endregion
@@ -229,6 +271,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             {
                 var text = (AtkTextNode*) tempNode->Component->UldManager.NodeList[15]->ChildNode;
                 textsNodes[i] = text;
+                var hp = (AtkComponentNode*) text->AtkResNode.ParentNode->PrevSiblingNode->PrevSiblingNode;
+                if (hp->AtkResNode.NodeID != 12) return;
+                hpNodes[i] = (AtkTextNode*) hp->Component->UldManager.NodeList[2];
                 tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
             }
 
@@ -239,9 +284,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 (AtkTextNode*) ((AtkUnitBase*) framework.Gui.GetAddonByName("_FocusTargetInfo", 1).Address)->UldManager
                 .NodeList[10];
 
-            player = Marshal.PtrToStructure<Actor>(PluginInterface.ClientState.Actors[0].Address);
-
             RefreshHooks();
+
 
             PluginInterface.Framework.OnUpdateEvent -= FindAddress;
         }
@@ -249,29 +293,52 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private void UpdatePartyUi()
         {
+            //try
+            //{
+            //    foreach (var v in partyList) SimpleLog.Information(v.CharacterName + " " + v.Address);
+            //}
+            //catch (Exception e)
+            //{
+            //    SimpleLog.Error(e);
+            //}
+            
             try
             {
-                if (partyNode == null) return;
-                var tempNode = partyNode;
-
-                var str0 = Plugin.Common.ReadSeString(textsNodes[0]->NodeText.StringPtr).ToString();
-                str0 = str0.Split(' ')[0];
-                WriteSeString(textsNodes[0], str0 + " " + JobStrings[player.ClassJob]);
-
-                for (var i = 1; i < 8; i++)
+                if (partyNode == null)
                 {
-                    tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
+                    PluginInterface.Framework.OnUpdateEvent += FindAddress;
+                    return;
+                }
+
+                var tempNode = partyNode;
+                if (!tempNode->AtkResNode.IsVisible) return;
+                for (var i = 0; i < partyList.Count; i++)
+                {
                     if (!tempNode->AtkResNode.IsVisible) break;
+
                     var str = Plugin.Common.ReadSeString(textsNodes[i]->NodeText.StringPtr).ToString(); //UI string
                     if (str == "") break;
                     SplitString(str, true, out var lvl, out var namejob);
-
                     var index = partyList.IndexOf(namejob);
+
+                    if (Config.PartyName)
+                    {
+                        if (index == -1) index = partyList.IndexOf(namecache[i]);
+                        else namecache[i] = namejob;
+                    }
+
                     if (index != -1)
                     {
-                        var job = JobStrings[partyList[index].ClassJob];
-                        WriteSeString(textsNodes[i], lvl + " " + job);
+                        if (Config.PartyName)
+                        {
+                            var job = JobStrings[partyList[index].ClassJob];
+                            SetName(textsNodes[i], lvl + " " + job);
+                        }
+
+                        if (Config.HpPercent) SetHp(hpNodes[i], partyList[index]);
                     }
+
+                    tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
                 }
             }
             catch (Exception e)
@@ -295,7 +362,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     if (index != -1)
                     {
                         var job = JobStrings[partyList[index].ClassJob];
-                        WriteSeString(tTextNode, job);
+                        SetName(tTextNode, job);
                     }
                 }
 
@@ -307,7 +374,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     if (index != -1)
                     {
                         var job = JobStrings[partyList[index].ClassJob];
-                        WriteSeString(ttTextNode,
+                        SetName(ttTextNode,
                             PartyNumber.Contains(number) ? number + job : job);
                     }
                 }
@@ -334,7 +401,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     if (index != -1)
                     {
                         var job = JobStrings[partyList[index].ClassJob];
-                        WriteSeString(focusTextNode,
+                        SetName(focusTextNode,
                             PartyNumber.Contains(number)
                                 ? part1 + " " + number + job
                                 : part1 + " " + job);
@@ -350,7 +417,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                         if (index != -1)
                         {
                             var job = JobStrings[partyList[index].ClassJob];
-                            WriteSeString(focusTextNode,
+                            SetName(focusTextNode,
                                 number + " " + job);
                         }
                     }
@@ -365,7 +432,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         #region Framework
 
-        private void OnlogOut(object sender, EventArgs e)
+        private void OnLogOut(object sender, EventArgs e)
         {
             PluginInterface.Framework.OnUpdateEvent += FindAddress;
             DisposeHooks();
@@ -375,7 +442,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             if (Enabled) return;
             PluginInterface.Framework.OnUpdateEvent += FindAddress;
-            PluginInterface.ClientState.OnLogout += OnlogOut;
+            PluginInterface.ClientState.OnLogout += OnLogOut;
             Enabled = true;
         }
 
@@ -383,7 +450,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             if (!Enabled) return;
             PluginInterface.Framework.OnUpdateEvent -= FindAddress;
-            PluginInterface.ClientState.OnLogout -= OnlogOut;
+            PluginInterface.ClientState.OnLogout -= OnLogOut;
             DisableHooks();
             SimpleLog.Debug($"[{GetType().Name}] Reset");
             Enabled = false;
@@ -393,7 +460,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         public override void Dispose()
         {
             PluginInterface.Framework.OnUpdateEvent -= FindAddress;
-            PluginInterface.ClientState.OnLogout -= OnlogOut;
+            PluginInterface.ClientState.OnLogout -= OnLogOut;
             DisposeHooks();
             Enabled = false;
             Ready = false;
