@@ -23,6 +23,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             public Vector2 Position = new Vector2(0);
             public bool NoFocus;
             public Vector2 FocusPosition = new Vector2(0);
+            public bool EnableDistance = true;
         }
         
         public enum DisplayFormat {
@@ -62,6 +63,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 ImGui.SetNextItemWidth(150);
                 hasChanged |= ImGui.InputFloat("焦点目标垂直偏移##AdjustTargetHPFocusPositionY", ref Config.FocusPosition.Y, 1, 5, "%0.f");
             }
+            hasChanged |= ImGui.Checkbox("显示与目标和的距离", ref Config.EnableDistance);
+
         };
         
         public override string Name => "目标HP";
@@ -184,8 +187,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             textNode->EdgeColor = cloneTextNode->EdgeColor;
             
             
-            if (target is Chara chara) {
-                UiHelper.SetText(textNode, $"{FormatNumber(chara.CurrentHp)}/{FormatNumber(chara.MaxHp)}");
+            if (target is Chara chara)
+            {
+                Vector3 me = PluginInterface.ClientState.LocalPlayer.Position;
+                Vector3 tar = chara.Position;
+                var y = " " + Vector3.Distance(me, tar).ToString("00.0");
+                if (!Config.EnableDistance) y = "";
+                UiHelper.SetText(textNode, $"{FormatNumber(chara.CurrentHp)}/{FormatNumber(chara.MaxHp)}"+y);
             } else {
                 UiHelper.SetText(textNode, "");
             }
