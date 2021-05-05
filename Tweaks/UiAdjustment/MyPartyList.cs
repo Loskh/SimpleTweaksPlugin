@@ -109,8 +109,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         internal static PartyMember RegularMember(ActorTable table, IntPtr memberAddress)
         {
             //var actor = GetActorById(table, Marshal.ReadInt32(memberAddress, 0x1A8));
-            var maxHp = (uint) Marshal.ReadInt16(memberAddress, 0x1B8);
-            var currentHp = (uint) Marshal.ReadInt16(memberAddress, 0x1B4);
+            var maxHp = (uint) Marshal.ReadInt32(memberAddress, 0x1B8);
+            var currentHp = (uint) Marshal.ReadInt32(memberAddress, 0x1B4);
             var member = new PartyMember
             {
                 //Actor = actor,

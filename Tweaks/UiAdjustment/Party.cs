@@ -89,7 +89,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private Hook<MainTargetUiUpdate> mainTargetUpdateHook;
         private Hook<FocusUiUpdate> focusUpdateHook;
 
-        private readonly PartyList partyList = new(Common.PluginInterface);
+        private PartyList partyList;
         private AtkComponentNode* partyNode;
         private AtkTextNode* focusTextNode;
         private AtkTextNode* tTextNode;
@@ -98,11 +98,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private readonly AtkTextNode*[] hpNodes = new AtkTextNode*[8];
         private string[] namecache = new string[8];
 
-        private readonly UIForegroundPayload uiYellow =
-            new(new DataManager(Common.PluginInterface.Data.Language), 559);
-
-        private readonly UIForegroundPayload uiNoColor =
-            new(new DataManager(Common.PluginInterface.Data.Language), 0);
 
         public override string Name => "队伍列表修改";
         public override string Description => "队伍列表相关内容修改";
@@ -247,6 +242,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 se.Payloads.Add(new TextPayload(member.Hpp.ToString()));
                 if (member.ShieldPercent != 0)
                 {
+                    UIForegroundPayload uiYellow =
+                        new(PluginInterface.Data, 559);
+                    UIForegroundPayload uiNoColor =
+                        new(PluginInterface.Data, 0);
+
                     se.Payloads.Add(new TextPayload("+"));
                     se.Payloads.Add(uiYellow);
                     se.Payloads.Add(new TextPayload(member.ShieldPercent.ToString()));
@@ -287,6 +287,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 (AtkTextNode*) ((AtkUnitBase*) framework.Gui.GetAddonByName("_FocusTargetInfo", 1).Address)->UldManager
                 .NodeList[10];
 
+            partyList = new PartyList(PluginInterface);
             RefreshHooks();
 
 
