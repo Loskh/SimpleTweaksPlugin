@@ -191,7 +191,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             {
                 Vector3 me = PluginInterface.ClientState.LocalPlayer.Position;
                 Vector3 tar = chara.Position;
-                var y = " " + Vector3.Distance(me, tar).ToString("00.0");
+                var y = "  " + Vector3.Distance(me, tar).ToString("00.0");
                 if (!Config.EnableDistance) y = "";
                 UiHelper.SetText(textNode, $"{FormatNumber(chara.CurrentHp)}/{FormatNumber(chara.MaxHp)}"+y);
             } else {
