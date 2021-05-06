@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Dalamud.Game.ClientState.Actors;
 using Dalamud.Game.ClientState.Actors.Types;
+using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin;
 using Common = SimpleTweaksPlugin.Helper.Common;
 
@@ -98,7 +99,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         public string CharacterName { get; private set; }
 
         //public Actor Actor { get; private set; }
-        public uint ClassJob { get; private set; }
+        public byte ClassJob { get; private set; }
         public string Address { get; private set; }
         public uint ShieldPercent { get; private set; }
         public uint Hpp { get; private set; }
@@ -106,6 +107,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         public uint MaxHp { get; private set; }
 
+        
         internal static PartyMember RegularMember(ActorTable table, IntPtr memberAddress)
         {
             //var actor = GetActorById(table, Marshal.ReadInt32(memberAddress, 0x1A8));
@@ -127,17 +129,29 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         internal static PartyMember CrossRealmMember(ActorTable table, IntPtr crossMemberAddress)
         {
-            //var actor = GetActorById(table, Marshal.ReadInt32(crossMemberAddress, 0x10));
+            var actor = GetActorById(table, Marshal.ReadInt32(crossMemberAddress, 0x10));
+            uint maxHp, currentHp;
+            if (actor != null)
+            {
+                var act = Marshal.PtrToStructure<Dalamud.Game.ClientState.Structs.Actor>(actor.Address);
+                maxHp = (uint) act.MaxHp;
+                currentHp = (uint) act.CurrentHp;
+            }
+            else
+            {
+                maxHp = 0;
+                currentHp = 0;
+            }
             var member = new PartyMember
             {
                 //Actor = actor,
                 CharacterName = PtrToStringUtf8(crossMemberAddress + 0x22),
                 ClassJob = Marshal.ReadByte(crossMemberAddress, 0x1E),
                 Address = crossMemberAddress.ToString("X"),
-                ShieldPercent = 0,
-                Hpp = 100,
-                MaxHp = 0,
-                CurrentHp = 0
+                ShieldPercent = actor != null ? Marshal.ReadByte(actor.Address, 0x1977) : (uint) 0,
+                Hpp = maxHp == 0 ? 0 : currentHp * 100 / maxHp,
+                MaxHp = currentHp,
+                CurrentHp = currentHp
             };
             return member;
         }

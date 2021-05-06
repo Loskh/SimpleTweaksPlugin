@@ -33,50 +33,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         public Configs Config => PluginConfig.UiAdjustments.PartyListAdjustments;
 
-        private static readonly string[] JobStrings = new string[]
-        {
-            "冒险者",
-            "剑术师",
-            "格斗家",
-            "斧术师",
-            "枪术师",
-            "弓箭手",
-            "幻术师",
-            "咒术师",
-            "刻木匠",
-            "锻铁匠",
-            "铸甲匠",
-            "雕金匠",
-            "制革匠",
-            "裁衣匠",
-            "炼金术士",
-            "烹调师",
-            "采矿工",
-            "园艺工",
-            "捕鱼人",
-            "骑士",
-            "武僧",
-            "战士",
-            "龙骑士",
-            "诗人",
-            "白魔法师",
-            "黑魔法师",
-            "秘术师",
-            "召唤师",
-            "学者",
-            "双剑师",
-            "忍者",
-            "机工士",
-            "暗黑骑士",
-            "占星术士",
-            "武士",
-            "赤魔法师",
-            "青魔法师",
-            "绝枪战士",
-            "舞者",
-            "UNKNOWN"
-        };
-
         private const string PartyNumber = "";
 
         private delegate long PartyUiUpdate(long a1, long a2, long a3);
@@ -259,6 +215,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             Plugin.Common.WriteSeString(node->NodeText, se);
         }
 
+        private string GetJobName(byte id)
+        {
+            return PluginInterface.Data.Excel.GetSheet<Lumina.Excel.GeneratedSheets.ClassJob>().GetRow(id).Name.ToString();
+        }
+
+
         #endregion
 
 
@@ -335,7 +297,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     {
                         if (Config.PartyName)
                         {
-                            var job = JobStrings[partyList[index].ClassJob];
+                            var job = GetJobName(partyList[index].ClassJob);
                             SetName(textsNodes[i], lvl + " " + job);
                         }
 
@@ -365,7 +327,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
                     if (index != -1)
                     {
-                        var job = JobStrings[partyList[index].ClassJob];
+                        var job = GetJobName(partyList[index].ClassJob);
                         SetName(tTextNode, job);
                     }
                 }
@@ -377,7 +339,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     var index = partyList.IndexOf(ttname);
                     if (index != -1)
                     {
-                        var job = JobStrings[partyList[index].ClassJob];
+                        var job = GetJobName(partyList[index].ClassJob);
                         SetName(ttTextNode,
                             PartyNumber.Contains(number) ? number + job : job);
                     }
@@ -404,7 +366,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
                     if (index != -1)
                     {
-                        var job = JobStrings[partyList[index].ClassJob];
+                        var job = GetJobName(partyList[index].ClassJob);
                         SetName(focusTextNode,
                             PartyNumber.Contains(number)
                                 ? part1 + " " + number + job
@@ -420,7 +382,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                         var index = partyList.IndexOf(part1);
                         if (index != -1)
                         {
-                            var job = JobStrings[partyList[index].ClassJob];
+                            var job = GetJobName(partyList[index].ClassJob);
                             SetName(focusTextNode,
                                 number + " " + job);
                         }
