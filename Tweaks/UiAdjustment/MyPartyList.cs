@@ -99,7 +99,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         public string CharacterName { get; private set; }
 
         //public Actor Actor { get; private set; }
-        public byte ClassJob { get; private set; }
+        public uint ClassJob { get; private set; }
         public string Address { get; private set; }
         public uint ShieldPercent { get; private set; }
         public uint Hpp { get; private set; }

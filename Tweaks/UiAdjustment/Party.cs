@@ -53,6 +53,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private readonly AtkTextNode*[] textsNodes = new AtkTextNode*[8];
         private readonly AtkTextNode*[] hpNodes = new AtkTextNode*[8];
         private string[] namecache = new string[8];
+        private long i1, i2, i3, i4;
 
 
         public override string Name => "队伍列表修改";
@@ -135,10 +136,22 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         #region detors
 
-        private long PartyListUpdateDelegate(long a1, long a2, long a3)
+        private unsafe long PartyListUpdateDelegate(long a1, long a2, long a3)
         {
             var tar = partyUiUpdateHook.Original(a1, a2, a3);
             UpdatePartyUi();
+            if (a1 != i1 || a2 != i2 || a3 != i3 || tar != i4)
+            {
+                i1 = a1;
+                i2 = a2;
+                i3 = a3;
+                i4 = tar;
+                SimpleLog.Information("NewAddress:");
+                SimpleLog.Information("A1:"+i1.ToString("X")+" A2:"+i2.ToString("X"));
+                SimpleLog.Information("A3:"+i3.ToString("X")+" A4:"+i4.ToString("X"));
+                var ptr = (IntPtr)(a2 + 0x20);
+                SimpleLog.Information("Data:"+ptr.ToString("X"));
+            }
             return tar;
         }
 
@@ -215,7 +228,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             Plugin.Common.WriteSeString(node->NodeText, se);
         }
 
-        private string GetJobName(byte id)
+        private string GetJobName(uint id)
         {
             return PluginInterface.Data.Excel.GetSheet<Lumina.Excel.GeneratedSheets.ClassJob>().GetRow(id).Name.ToString();
         }
