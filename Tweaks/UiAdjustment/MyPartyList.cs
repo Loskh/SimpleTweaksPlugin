@@ -92,9 +92,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
     public class PartyMember
     {
-        private PartyMember()
-        {
-        }
+        
 
         public string CharacterName { get; private set; }
 

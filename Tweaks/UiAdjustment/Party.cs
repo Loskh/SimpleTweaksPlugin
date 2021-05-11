@@ -1,14 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Dalamud;
 using Dalamud.Game.Internal;
-using FFXIVClientStructs.FFXIV.Component.GUI;
-using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
 using Dalamud.Hooking;
-using SimpleTweaksPlugin.Helper;
-using Dalamud.Data;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
+using SimpleTweaksPlugin.Helper;
+using SimpleTweaksPlugin.Tweaks.UiAdjustment;
+using System;
+using System.Collections.Generic;
+using SimpleTweaksPlugin.GameStructs;
 
 
 namespace SimpleTweaksPlugin
@@ -45,15 +46,19 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private Hook<MainTargetUiUpdate> mainTargetUpdateHook;
         private Hook<FocusUiUpdate> focusUpdateHook;
 
-        private PartyList partyList;
-        private AtkComponentNode* partyNode;
+        private PartyUi* party;
+        private DataArray* data;
+
+        //private AtkComponentNode* partyNode;
         private AtkTextNode* focusTextNode;
         private AtkTextNode* tTextNode;
+
         private AtkTextNode* ttTextNode;
-        private readonly AtkTextNode*[] textsNodes = new AtkTextNode*[8];
-        private readonly AtkTextNode*[] hpNodes = new AtkTextNode*[8];
-        private string[] namecache = new string[8];
-        private long i1, i2, i3, i4;
+
+        //private readonly AtkTextNode*[] textsNodes = new AtkTextNode*[8];
+        //private readonly AtkTextNode*[] hpNodes = new AtkTextNode*[8];
+        //private string[] namecache = new string[8];
+        private IntPtr l1, l2, l3;
 
 
         public override string Name => "队伍列表修改";
@@ -136,23 +141,25 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         #region detors
 
-        private unsafe long PartyListUpdateDelegate(long a1, long a2, long a3)
+        private long PartyListUpdateDelegate(long a1, long a2, long a3)
         {
-            var tar = partyUiUpdateHook.Original(a1, a2, a3);
-            UpdatePartyUi();
-            if (a1 != i1 || a2 != i2 || a3 != i3 || tar != i4)
+            if ((IntPtr) a1 != l1)
             {
-                i1 = a1;
-                i2 = a2;
-                i3 = a3;
-                i4 = tar;
+                l1 = (IntPtr) a1;
+                l2 = (IntPtr) (*(long*) (*(long*) (a2 + 0x20) + 0x20));
+                l3 = (IntPtr) (*(long*) (*(long*) (a3 + 0x18) + 0x20) + 0x30); //+Index*0x68
+                party = (PartyUi*) l1;
+                data = (DataArray*) l2;
+
+
                 SimpleLog.Information("NewAddress:");
-                SimpleLog.Information("A1:"+i1.ToString("X")+" A2:"+i2.ToString("X"));
-                SimpleLog.Information("A3:"+i3.ToString("X")+" A4:"+i4.ToString("X"));
-                var ptr = (IntPtr)(a2 + 0x20);
-                SimpleLog.Information("Data:"+ptr.ToString("X"));
+                SimpleLog.Information("L1:" + l1.ToString("X") + " L2:" + l2.ToString("X"));
+                SimpleLog.Information("L3:" + l3.ToString("X"));
             }
-            return tar;
+            UpdatePartyUi(false);
+            var ret = partyUiUpdateHook.Original(a1, a2, a3);
+            UpdatePartyUi(true);
+            return ret;
         }
 
         private void MainTargetUpdateDelegate(long a1, long a2, long a3)
@@ -174,6 +181,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private static void SplitString(string str, bool first, out string part1, out string part2)
         {
+            if (str.Length == 0)
+            {
+                part1 = "";
+                part2 = "";
+                return ;
+            }
             var index = first ? str.IndexOf(' ') : str.LastIndexOf(' ');
             if (index == -1)
             {
@@ -189,26 +202,26 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private void SetName(AtkTextNode* node, string payload)
         {
+            if (node == null || payload == String.Empty) return;
             var seString = new SeString(new List<Payload>());
             seString.Payloads.Add(new TextPayload(payload));
             Plugin.Common.WriteSeString(node->NodeText, seString);
         }
 
-        private void SetHp(AtkTextNode* node, PartyMember member)
+        private void SetHp(AtkTextNode* node, MemberData member)
         {
-            if (!Config.HpPercent) return;
             var se = new SeString(new List<Payload>());
-            if (member.CurrentHp == 1)
+            if (member.CurrentHP == 1)
             {
                 se.Payloads.Add(new TextPayload("1"));
             }
-            else if (member.MaxHp == 0)
+            else if (member.MaxHp == 1)
             {
                 se.Payloads.Add(new TextPayload("???"));
             }
             else
             {
-                se.Payloads.Add(new TextPayload(member.Hpp.ToString()));
+                se.Payloads.Add(new TextPayload((member.CurrentHP * 100 / member.MaxHp).ToString()));
                 if (member.ShieldPercent != 0)
                 {
                     UIForegroundPayload uiYellow =
@@ -230,95 +243,37 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private string GetJobName(uint id)
         {
-            return PluginInterface.Data.Excel.GetSheet<Lumina.Excel.GeneratedSheets.ClassJob>().GetRow(id).Name.ToString();
+            return PluginInterface.ClientState.ClientLanguage == ClientLanguage.English
+                ? PluginInterface.Data.Excel.GetSheet<Lumina.Excel.GeneratedSheets.ClassJob>().GetRow(id).NameEnglish
+                : PluginInterface.Data.Excel.GetSheet<Lumina.Excel.GeneratedSheets.ClassJob>().GetRow(id).Name;
         }
 
-
-        #endregion
-
-
-        private void FindAddress(Framework framework)
+        private static AtkResNode* GetNodeById(AtkComponentBase* compBase, int id)
         {
-            if (PluginInterface.ClientState.Actors[0] == null) return;
-
-            var partyPointer = (AtkUnitBase*) framework.Gui.GetAddonByName("_PartyList", 1).Address;
-            partyNode = (AtkComponentNode*) partyPointer->UldManager.NodeList[17];
-            if (partyNode == null) return;
-            var tempNode = partyNode; //PartyListUI.player<1>.atkComponentNode
-            for (var i = 0; i < 8; i++)
+            if ((compBase->UldManager.Flags1 & 1) == 0 || id == 0) return null;
+            if (compBase->UldManager.Objects == null) return null;
+            var count = compBase->UldManager.Objects->NodeCount;
+            var ptr = (long) compBase->UldManager.Objects->NodeList;
+            for (var i = 0; i < count; i++)
             {
-                var text = (AtkTextNode*) tempNode->Component->UldManager.NodeList[15]->ChildNode;
-                textsNodes[i] = text;
-                var hp = (AtkComponentNode*) text->AtkResNode.ParentNode->PrevSiblingNode->PrevSiblingNode;
-                if (hp->AtkResNode.NodeID != 12) return;
-                hpNodes[i] = (AtkTextNode*) hp->Component->UldManager.NodeList[2];
-                tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
+                var node = (AtkResNode*) *(long*) (ptr + 8 * i);
+                if (node->NodeID == id) return node;
             }
 
-            var mainTargetUi = (AtkUnitBase*) framework.Gui.GetAddonByName("_TargetInfoMainTarget", 1).Address;
-            tTextNode = (AtkTextNode*) mainTargetUi->UldManager.NodeList[8];
-            ttTextNode = (AtkTextNode*) mainTargetUi->UldManager.NodeList[12];
-            focusTextNode =
-                (AtkTextNode*) ((AtkUnitBase*) framework.Gui.GetAddonByName("_FocusTargetInfo", 1).Address)->UldManager
-                .NodeList[10];
-
-            partyList = new PartyList(PluginInterface);
-            RefreshHooks();
-
-
-            PluginInterface.Framework.OnUpdateEvent -= FindAddress;
+            return null;
         }
 
-
-        private void UpdatePartyUi()
+        private int GetIndex(SeString name)
         {
-            //try
-            //{
-            //    foreach (var v in partyList) SimpleLog.Information(v.CharacterName + " " + v.Address);
-            //}
-            //catch (Exception e)
-            //{
-            //    SimpleLog.Error(e);
-            //}
-            
             try
             {
-                if (partyNode == null)
+                for (var i = 0; i < data->LocalCount + data->CrossRealmCount; i++)
                 {
-                    PluginInterface.Framework.OnUpdateEvent += FindAddress;
-                    return;
+                    var ptr = *((long*) l3+i*13)+0x68;
+                    if (Plugin.Common.ReadSeString((byte*) ptr).TextValue == name.TextValue) return i;
                 }
 
-                var tempNode = partyNode;
-                if (!tempNode->AtkResNode.IsVisible) return;
-                for (var i = 0; i < partyList.Count; i++)
-                {
-                    if (!tempNode->AtkResNode.IsVisible) break;
-
-                    var str = Plugin.Common.ReadSeString(textsNodes[i]->NodeText.StringPtr).ToString(); //UI string
-                    if (str == "") break;
-                    SplitString(str, true, out var lvl, out var namejob);
-                    var index = partyList.IndexOf(namejob);
-
-                    if (Config.PartyName)
-                    {
-                        if (index == -1) index = partyList.IndexOf(namecache[i]);
-                        else namecache[i] = namejob;
-                    }
-
-                    if (index != -1)
-                    {
-                        if (Config.PartyName)
-                        {
-                            var job = GetJobName(partyList[index].ClassJob);
-                            SetName(textsNodes[i], lvl + " " + job);
-                        }
-
-                        if (Config.HpPercent) SetHp(hpNodes[i], partyList[index]);
-                    }
-
-                    tempNode = (AtkComponentNode*) tempNode->AtkResNode.NextSiblingNode;
-                }
+                return -1;
             }
             catch (Exception e)
             {
@@ -327,8 +282,70 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             }
         }
 
+        #endregion
+
+
+        private void FindAddress(Framework framework)
+        {
+            if (PluginInterface.ClientState.Actors[0] == null) return;
+
+            var mainTargetUi = (AtkUnitBase*) framework.Gui.GetAddonByName("_TargetInfoMainTarget", 1).Address;
+            tTextNode = (AtkTextNode*) mainTargetUi->UldManager.NodeList[8];
+            ttTextNode = (AtkTextNode*) mainTargetUi->UldManager.NodeList[12];
+            focusTextNode =
+                (AtkTextNode*) ((AtkUnitBase*) framework.Gui.GetAddonByName("_FocusTargetInfo", 1).Address)->UldManager
+                .NodeList[10];
+
+            RefreshHooks();
+
+            PluginInterface.Framework.OnUpdateEvent -= FindAddress;
+        }
+
+
+        private void UpdatePartyUi(bool done)
+        {
+            try
+            {
+                
+                for (var index = 0; index < data->LocalCount + data->CrossRealmCount; index++)
+                {
+                    if (!done) //改名
+                    {
+                        if (!Config.PartyName) return;
+                        var address = (byte*) *(((long*) l3) + 13 * index);
+                        var job = data->MemberData(index).JobId - 0xF294;
+
+                        job = job > 38 ? 0:job;
+                        if (Plugin.Common.ReadSeString(address).TextValue != GetJobName(job) ||
+                            (data->MemberData(index).JobId != party->JobId[index]))
+                        {
+                            
+                            Plugin.Common.WriteSeString(address, GetJobName(job));
+                            *((byte*) data + 0x1C + index * 0x9C) = 1; //Changed
+                        }
+                    }
+                    else //改HP
+                    {
+                        if (!Config.HpPercent) return;
+                        var textNode = (AtkTextNode*) GetNodeById(party->Member(index).hpComponentBase, 2);
+                        if (textNode != null)
+                        {
+                            SetHp(textNode, data->MemberData(index));
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                SimpleLog.Error(e);
+                throw;
+            }
+
+        }
+
         private void UpdateTarget()
         {
+            if (PluginInterface.ClientState.Actors[0] == null) return;
             try
             {
                 SplitString(Plugin.Common.ReadSeString(tTextNode->NodeText.StringPtr).ToString(), false, out var tname,
@@ -336,11 +353,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 var ttname = Plugin.Common.ReadSeString(ttTextNode->NodeText.StringPtr).ToString();
                 if (tname.Length >= 1)
                 {
-                    var index = partyList.IndexOf(tname);
-
+                    var index = GetIndex(tname);
+                    
                     if (index != -1)
                     {
-                        var job = GetJobName(partyList[index].ClassJob);
+                        var jobid = data->MemberData(index).JobId;
+                        jobid = jobid == 0 ? 0 : jobid - 0xF294;
+                        var job = GetJobName(jobid);
                         SetName(tTextNode, job);
                     }
                 }
@@ -349,10 +368,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 {
                     var number = ttname.Substring(0, 1);
                     if (PartyNumber.Contains(number)) ttname = ttname.Substring(1);
-                    var index = partyList.IndexOf(ttname);
+                    var index = GetIndex(ttname);
                     if (index != -1)
                     {
-                        var job = GetJobName(partyList[index].ClassJob);
+                        var jobid = data->MemberData(index).JobId;
+                        jobid = jobid == 0 ? 0 : jobid - 0xF294;
+                        var job = GetJobName(jobid);
                         SetName(ttTextNode,
                             PartyNumber.Contains(number) ? number + job : job);
                     }
@@ -366,6 +387,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private void UpdateFocus()
         {
+            if (PluginInterface.ClientState.Actors[0] == null) return;
             try
             {
                 SplitString(Plugin.Common.ReadSeString(focusTextNode->NodeText.StringPtr).ToString(), true,
@@ -375,11 +397,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 {
                     var number = part2.Substring(0, 1);
                     if (PartyNumber.Contains(number)) part2 = part2.Substring(1);
-                    var index = partyList.IndexOf(part2);
+                    var index = GetIndex(part2);
 
                     if (index != -1)
                     {
-                        var job = GetJobName(partyList[index].ClassJob);
+                        var jobid = data->MemberData(index).JobId;
+                        jobid = jobid == 0 ? 0 : jobid - 0xF294;
+                        var job = GetJobName(jobid);
                         SetName(focusTextNode,
                             PartyNumber.Contains(number)
                                 ? part1 + " " + number + job
@@ -392,10 +416,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     {
                         var number = part1.Substring(0, 1);
                         part1 = part1.Substring(1);
-                        var index = partyList.IndexOf(part1);
+                        var index = GetIndex(part1);
                         if (index != -1)
                         {
-                            var job = GetJobName(partyList[index].ClassJob);
+                            var jobid = data->MemberData(index).JobId;
+                            jobid = jobid == 0 ? 0 : jobid - 0xF294;
+                            var job = GetJobName(jobid);
                             SetName(focusTextNode,
                                 number + " " + job);
                         }
@@ -414,12 +440,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private void OnLogOut(object sender, EventArgs e)
         {
             PluginInterface.Framework.OnUpdateEvent += FindAddress;
-            DisposeHooks();
+            //DisposeHooks();
         }
 
         public override void Enable()
         {
             if (Enabled) return;
+            RefreshHooks();
             PluginInterface.Framework.OnUpdateEvent += FindAddress;
             PluginInterface.ClientState.OnLogout += OnLogOut;
             Enabled = true;

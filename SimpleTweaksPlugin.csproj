@@ -40,6 +40,9 @@
         <Compile Remove="Debugging\**" />
     </ItemGroup>
     <ItemGroup>
+      <Compile Remove="Tweaks\UiAdjustment\MyPartyList.cs" />
+    </ItemGroup>
+    <ItemGroup>
       <PackageReference Include="ILMerge" Version="3.0.41" />
     </ItemGroup>
     <ItemGroup>
