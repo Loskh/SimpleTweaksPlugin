@@ -21,14 +21,23 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         public class Configs {
             public DisplayFormat DisplayFormat = DisplayFormat.OneDecimalPrecision;
             public Vector2 Position = new Vector2(0);
+            public bool UseCustomColor = false;
+            public Vector4 CustomColor = new Vector4(1);
+            public byte FontSize = 14;
+            
             public bool NoFocus;
             public Vector2 FocusPosition = new Vector2(0);
-            public bool EnableDistance = true;
+            public bool EnableDistance = false;
+            public bool FocusUseCustomColor = false;
+            public Vector4 FocusCustomColor = new Vector4(1);
+            public byte FocusFontSize = 14;
         }
         
         public enum DisplayFormat {
             [Description("完整数值")] 
             FullNumber,
+            [Description("带分隔符的完整值 (5,555,555)")]
+            FullNumberSeparators,
             [Description("简写 (5K, 5M)")]
             ZeroDecimalPrecision,
             [Description("一位小数 (5.5K, 5.5M)")]
@@ -53,6 +62,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             hasChanged |= ImGui.InputFloat("水平偏移##AdjustTargetHPPositionX", ref Config.Position.X, 1, 5, "%.0f");
             ImGui.SetNextItemWidth(150);
             hasChanged |= ImGui.InputFloat("垂直偏移##AdjustTargetHPPositionY", ref Config.Position.Y, 1, 5, "%0.f");
+            hasChanged |= ImGuiExt.InputByte("字体大小##TargetHPFontSize", ref Config.FontSize);
+            hasChanged |= ImGui.Checkbox("自定义颜色##TargetHPUseCustomColor", ref Config.UseCustomColor);
+            if (Config.UseCustomColor) {
+                ImGui.SameLine();
+                hasChanged |= ImGui.ColorEdit4("##TargetHPCustomColor", ref Config.CustomColor);
+            }
             
             ImGui.Dummy(new Vector2(5) * ImGui.GetIO().FontGlobalScale);
             hasChanged |= ImGui.Checkbox("不显示焦点目标HP", ref Config.NoFocus);
@@ -62,6 +77,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 hasChanged |= ImGui.InputFloat("焦点目标水平偏移##AdjustTargetHPFocusPositionX", ref Config.FocusPosition.X, 1, 5, "%.0f");
                 ImGui.SetNextItemWidth(150);
                 hasChanged |= ImGui.InputFloat("焦点目标垂直偏移##AdjustTargetHPFocusPositionY", ref Config.FocusPosition.Y, 1, 5, "%0.f");
+                hasChanged |= ImGuiExt.InputByte("字体大小##TargetHPFocusFontSize", ref Config.FocusFontSize);
+                hasChanged |= ImGui.Checkbox("自定义颜色##TargetHPFocusUseCustomColor", ref Config.FocusUseCustomColor);
+                if (Config.FocusUseCustomColor) {
+                    ImGui.SameLine();
+                    hasChanged |= ImGui.ColorEdit4("##TargetHPFocusCustomColor", ref Config.FocusCustomColor);
+                }
             }
             hasChanged |= ImGui.Checkbox("显示与目标和的距离", ref Config.EnableDistance);
 
@@ -116,26 +137,26 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             var gauge = (AtkComponentNode*) unitBase->UldManager.NodeList[36];
             var textNode = (AtkTextNode*) unitBase->UldManager.NodeList[39];
             UiHelper.SetSize(unitBase->UldManager.NodeList[37], reset ? 44 : 0, reset ? 20 : 0);
-            UpdateGaugeBar(gauge, textNode, target, Config.Position, reset);
+            UpdateGaugeBar(gauge, textNode, target, Config.Position, Config.UseCustomColor ? Config.CustomColor : null, Config.FontSize, reset);
         }
         private void UpdateFocusTarget(AtkUnitBase* unitBase, Actor target, bool reset = false) {
             if (Config.NoFocus) reset = true;
             if (unitBase == null || unitBase->UldManager.NodeList == null || unitBase->UldManager.NodeListCount < 11) return;
             var gauge = (AtkComponentNode*) unitBase->UldManager.NodeList[2];
             var textNode = (AtkTextNode*) unitBase->UldManager.NodeList[10];
-            UpdateGaugeBar(gauge, textNode, target, Config.FocusPosition, reset);
+            UpdateGaugeBar(gauge, textNode, target, Config.FocusPosition, Config.FocusUseCustomColor ? Config.FocusCustomColor : null, Config.FocusFontSize, reset);
         }
         private void UpdateMainTargetSplit(AtkUnitBase* unitBase, Actor target, bool reset = false) {
             if (unitBase == null || unitBase->UldManager.NodeList == null || unitBase->UldManager.NodeListCount < 9) return;
             var gauge = (AtkComponentNode*) unitBase->UldManager.NodeList[5];
             var textNode = (AtkTextNode*) unitBase->UldManager.NodeList[8];
             UiHelper.SetSize(unitBase->UldManager.NodeList[6], reset ? 44 : 0, reset ? 20 : 0);
-            UpdateGaugeBar(gauge, textNode, target, Config.Position, reset);
+            UpdateGaugeBar(gauge, textNode, target, Config.Position, Config.UseCustomColor ? Config.CustomColor : null, Config.FontSize, reset);
         }
 
         private const int TargetHPNodeID = 99990001;
         
-        private void UpdateGaugeBar(AtkComponentNode* gauge, AtkTextNode* cloneTextNode, Actor target, Vector2 positionOffset, bool reset = false) {
+        private void UpdateGaugeBar(AtkComponentNode* gauge, AtkTextNode* cloneTextNode, Actor target, Vector2 positionOffset, Vector4? customColor, byte fontSize, bool reset = false) {
             if (gauge == null || (ushort) gauge->AtkResNode.Type < 1000) return;
             
             AtkTextNode* textNode = null;
@@ -182,9 +203,16 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             UiHelper.SetPosition(textNode, positionOffset.X, positionOffset.Y);
             UiHelper.SetSize(textNode, gauge->AtkResNode.Width - 5, gauge->AtkResNode.Height);
             UiHelper.Show(textNode);
-
-            textNode->TextColor = cloneTextNode->TextColor;
+            if (!customColor.HasValue) {
+                textNode->TextColor = cloneTextNode->TextColor;
+            } else {
+                textNode->TextColor.A = (byte) (customColor.Value.W * 255);
+                textNode->TextColor.R = (byte) (customColor.Value.X * 255);
+                textNode->TextColor.G = (byte) (customColor.Value.Y * 255);
+                textNode->TextColor.B = (byte) (customColor.Value.Z * 255);
+            }
             textNode->EdgeColor = cloneTextNode->EdgeColor;
+            textNode->FontSize = fontSize;
             
             
             if (target is Chara chara)
@@ -201,6 +229,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
         private string FormatNumber(int num) {
             if (Config.DisplayFormat == DisplayFormat.FullNumber) return $"{num}";
+            if (Config.DisplayFormat == DisplayFormat.FullNumberSeparators) return $"{num:N0}";
 
             var fStr = Config.DisplayFormat switch {
                 DisplayFormat.OneDecimalPrecision => "F1",
