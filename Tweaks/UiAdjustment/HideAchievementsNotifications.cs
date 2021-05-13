@@ -24,8 +24,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             hasChanged |= ImGui.Checkbox("Hide the zone-in notification.", ref this.Config.HideZoneIn);
         };
 
-        public override string Name => "Hide Achievements Nearing Completion Notifications";
-        public override string Description => "Completely hides the login/zone-in notification for achievements nearing completion.";
+        public override string Name => "隐藏接近完成成就提示";
+        public override string Description => "完全隐藏登录或切换区域时显示的解决完成成就的通知";
         protected override string Author => "Anna";
 
         public override void Enable() {

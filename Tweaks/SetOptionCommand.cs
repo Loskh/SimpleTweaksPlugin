@@ -36,15 +36,15 @@ namespace SimpleTweaksPlugin.Tweaks {
         }
 
         private readonly Dictionary<string, (OptionType type, ulong key, string[] alias)> optionKinds = new() {
-            { "itemtooltips", (OptionType.Bool, 0x132, new [] {"itt"} )},
-            { "actiontooltips", (OptionType.Bool, 0x138, new [] {"att"}) },
-            { "gamepadmode", (OptionType.ToggleGamepadMode, 0x8B, new [] { "gp" })},
-            { "legacymovement", (OptionType.Bool, 0x8C, new [] { "lm"})},
-            { "owndisplayname", (OptionType.NameDisplayModeBattle, 0x172, new [] { "odn" })},
-            { "partydisplayname", (OptionType.NameDisplayModeBattle, 0x17E, new [] { "pdn" })},
-            { "alliancedisplayname", (OptionType.NameDisplayModeBattle, 0x187, new [] {"adn"})},
-            { "otherpcdisplayname", (OptionType.NameDisplayModeBattle, 0x18E, new [] {"opcdn"})},
-            { "frienddisplayname", (OptionType.NameDisplayModeBattle, 0x1CB, new [] {"fdn"})},
+            { "itemtooltips", (OptionType.Bool, 0x130, new [] {"itt"} )},
+            { "actiontooltips", (OptionType.Bool, 0x136, new [] {"att"}) },
+            { "gamepadmode", (OptionType.ToggleGamepadMode, 0x89, new [] { "gp" })},
+            { "legacymovement", (OptionType.Bool, 0x8A, new [] { "lm"})},
+            { "owndisplayname", (OptionType.NameDisplayModeBattle, 0x170, new [] { "odn" })},
+            { "partydisplayname", (OptionType.NameDisplayModeBattle, 0x17C, new [] { "pdn" })},
+            { "alliancedisplayname", (OptionType.NameDisplayModeBattle, 0x185, new [] {"adn"})},
+            { "otherpcdisplayname", (OptionType.NameDisplayModeBattle, 0x18C, new [] {"opcdn"})},
+            { "frienddisplayname", (OptionType.NameDisplayModeBattle, 0x1C9, new [] {"fdn"})},
         };
 
         private readonly Dictionary<OptionType, string> optionTypeValueHints = new Dictionary<OptionType, string> {

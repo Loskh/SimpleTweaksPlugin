@@ -79,6 +79,9 @@ namespace SimpleTweaksPlugin.Helper {
                 case ClientLanguage.French:
                     type = "fr/";
                     break;
+                case ClientLanguage.ChineseSimplified:
+                    type = "chs/";
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException("Language", "Unknown Language: " + pluginInterface.Data.Language.ToString());
             }
