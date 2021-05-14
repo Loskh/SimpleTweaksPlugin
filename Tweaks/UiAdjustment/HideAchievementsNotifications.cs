@@ -20,12 +20,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         public Configs Config => this.PluginConfig.UiAdjustments.HideAchievementsNotifications;
 
         protected override DrawConfigDelegate DrawConfigTree => (ref bool hasChanged) => {
-            hasChanged |= ImGui.Checkbox("Hide the login notification.", ref this.Config.HideLogIn);
-            hasChanged |= ImGui.Checkbox("Hide the zone-in notification.", ref this.Config.HideZoneIn);
+            hasChanged |= ImGui.Checkbox("隐藏登录通知", ref this.Config.HideLogIn);
+            hasChanged |= ImGui.Checkbox("隐藏切换区域通知", ref this.Config.HideZoneIn);
         };
 
-        public override string Name => "隐藏接近完成成就提示";
-        public override string Description => "完全隐藏登录或切换区域时显示的解决完成成就的通知";
+        public override string Name => "隐藏接近达成成就提示";
+        public override string Description => "完全隐藏登录或切换区域时绿色带倒计时的接近达成成就的通知";
         protected override string Author => "Anna";
 
         public override void Enable() {
