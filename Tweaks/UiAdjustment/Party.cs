@@ -76,7 +76,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             }
 
 
-            if (changed) RefreshHooks();
+            if (changed)
+            {
+                if (Config.ShieldShift) ShiftShield();
+                RefreshHooks();
+            }
         };
 
 
@@ -265,6 +269,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private string GetJobName(int id)
         {
+            if (id < 0 || id > 38) return "";
             return PluginInterface.ClientState.ClientLanguage == ClientLanguage.English
                 ? PluginInterface.Data.Excel.GetSheet<Lumina.Excel.GeneratedSheets.ClassJob>().GetRow((uint) id)
                     .NameEnglish
@@ -312,9 +317,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private void ShiftShield()
         {
+            if (l1 == IntPtr.Zero) return;
             for (var i = 0; i < 12; i++)
             {
                 var hpBarComponentBase = party->Member(i).hpBarComponentBase;
+                if (hpBarComponentBase == null) return;
                 var shieldNode = (AtkNineGridNode*) GetNodeById(hpBarComponentBase, 5);
                 var overShieldNode = (AtkImageNode*) GetNodeById(hpBarComponentBase, 2);
                 if (shieldNode != null)
@@ -339,6 +346,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             for (var i = 0; i < 12; i++)
             {
                 var hpBarComponentBase = party->Member(i).hpBarComponentBase;
+                if (hpBarComponentBase == null) return;
                 var shieldNode = (AtkNineGridNode*) GetNodeById(hpBarComponentBase, 5);
                 var overShieldNode = (AtkImageNode*) GetNodeById(hpBarComponentBase, 2);
                 if (shieldNode != null)
@@ -357,13 +365,14 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             }
         }
 
-        private void MpShield(int index)
+        private void ShieldOnMp(int index)
         {
             if (l1 == IntPtr.Zero) return;
             var memberdata = data->MemberData(index);
             var shield = memberdata.ShieldPercent * memberdata.MaxHp / 100;
             var node1 = (AtkTextNode*) GetNodeById(party->Member(index).mpBarComponentBase, 3);
             var node2 = (AtkTextNode*) GetNodeById(party->Member(index).mpBarComponentBase, 2);
+            if (node1 == null || node2 == null) return;
             UIForegroundPayload uiYellow =
                 new(PluginInterface.Data, 559);
             SeString se = new(new List<Payload>());
@@ -385,6 +394,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             for (var index = 0; index < 12; index++)
             {
                 var node1 = (AtkTextNode*) GetNodeById(party->Member(index).mpBarComponentBase, 3);
+                if (node1 == null) return;
                 if (node1->FontSize == 12)
                 {
                     node1->FontSize = 10;
@@ -396,7 +406,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private void UpdatePartyUi(bool done)
         {
-            if (PluginInterface.ClientState.Actors[0] == null) return;
             try
             {
                 for (var index = 0; index < data->LocalCount + data->CrossRealmCount; index++)
@@ -422,7 +431,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                             if (textNode != null) SetHp(textNode, data->MemberData(index));
                         }
 
-                        if (Config.MpShield) MpShield(index);
+                        if (Config.MpShield) ShieldOnMp(index);
                     }
             }
             catch (Exception e)
@@ -434,7 +443,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private void UpdateTarget()
         {
-            if (PluginInterface.ClientState.Actors[0] == null) return;
             try
             {
                 var tname = Plugin.Common.ReadSeString(tTextNode->NodeText.StringPtr).TextValue.Trim();
@@ -476,7 +484,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private void UpdateFocus()
         {
-            if (PluginInterface.ClientState.Actors[0] == null) return;
             try
             {
                 SplitString(Plugin.Common.ReadSeString(focusTextNode->NodeText.StringPtr).ToString().Trim(), true,
