@@ -28,8 +28,8 @@ namespace SimpleTweaksPlugin.GameStructs
         [FieldOffset(0x98)] public AtkNineGridNode* enmityBarNineGridNode; //Sorted[19] =8   仇恨量
         [FieldOffset(0xA0)] public AtkImageNode* iconNode; //Sorted[20] =11  职业Icon
         [FieldOffset(0xA8)] public AtkUldPart* iconAtkUldPart; //Sorted[21] =11? 职业Icon.AtkTexture
-        [FieldOffset(0xB0)] public AtkImageNode* crossNode; //Sorted[22] =10  跨服Icon              亲信=0
-        [FieldOffset(0xB8)] public AtkUldPart* crossAtkUldPart; //Sorted[23] =10? 跨服职业Icon.AtkTexture   亲信=0
+        [FieldOffset(0xB0)] public AtkImageNode* UnknownNode; //Sorted[22] =10  跨服Icon              亲信=0
+        [FieldOffset(0xB8)] public AtkUldPart* UnknownAtkUldPart; //Sorted[23] =10? 跨服职业Icon.AtkTexture   亲信=0
         [FieldOffset(0xC0)] public AtkComponentBase* hpComponentBase; //Sorted[24] =    HP部分 Components
         [FieldOffset(0xC8)] public AtkComponentBase* hpBarComponentBase; //Sorted[25] =    HP条 Components
         [FieldOffset(0xD0)] public AtkComponentBase* mpBarComponentBase; //Sorted[26] =    MP部分 Components     宠物=0
@@ -106,10 +106,10 @@ namespace SimpleTweaksPlugin.GameStructs
         [FieldOffset(0xD20)] private SortedMember Member11;
         [FieldOffset(0xE20)] private SortedMember Member12;
 
-        [FieldOffset(0xF20)] public fixed uint JobId[13]; //jobID+F294
-        [FieldOffset(0xF54)] public fixed uint InCrossRealm[13];
+        [FieldOffset(0xF20)] public fixed int JobId[13]; //ClassJob+F294 or 0
+        [FieldOffset(0xF54)] public fixed int UnknownINT[13];
 
-        [FieldOffset(0xF88)] public fixed short Edited[13]; //0X11 if edited
+        [FieldOffset(0xF88)] public fixed short Edited[13]; //0X11 if edited? Need comfirm
 
         [FieldOffset(0xFA8)] public AtkNineGridNode* BackgroundNineGridNode; //= Background;
         [FieldOffset(0xFB0)] public AtkTextNode* SoloTextNode; //= Solo指示;
@@ -117,11 +117,11 @@ namespace SimpleTweaksPlugin.GameStructs
         [FieldOffset(0xFC0)] public AtkResNode* MpBarSpecialResNode; //= 蓝条特殊Res;
         [FieldOffset(0xFC8)] public AtkTextNode* MpBarSpecialTextNode; //= 蓝条特殊Text;
 
-        [FieldOffset(0xFD0)] public ushort LocalCount; //本地
-        [FieldOffset(0xFD4)] public ushort CrossRealmCount; //跨服
-        [FieldOffset(0xFD8)] public ushort LeaderNumber; //or FFFF // (从0开始计数)
+        [FieldOffset(0xFD0)] public short LocalCount; //本地
+        [FieldOffset(0xFD4)] public short CrossRealmCount; //跨服
+        [FieldOffset(0xFD8)] public short LeaderNumber; //or FFFF // (从0开始计数)
 
-        [FieldOffset(0xFDC)] public ushort HideWhenSolo;
+        [FieldOffset(0xFDC)] public short HideWhenSolo;
         //[FieldOffset(0xFE0)] FFFFFFFF
         //[FieldOffset(0xFE4)]FFFFFFFF
         //[FieldOffset(0xFE8)] = 蓝条特殊Res.Y;
