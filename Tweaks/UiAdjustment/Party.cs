@@ -15,13 +15,13 @@ namespace SimpleTweaksPlugin
 {
     public partial class UiAdjustmentsConfig
     {
-        public PartyListAdjustments.Configs PartyListAdjustments = new();
+        public PartyUiAdjustments.Configs PartyUiAdjustments = new();
     }
 }
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 {
-    public unsafe class PartyListAdjustments : UiAdjustments.SubTweak
+    public unsafe class PartyUiAdjustments : UiAdjustments.SubTweak
     {
         public class Configs
         {
@@ -33,7 +33,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             public bool MpShield;
         }
 
-        public Configs Config => PluginConfig.UiAdjustments.PartyListAdjustments;
+        public Configs Config => PluginConfig.UiAdjustments.PartyUiAdjustments;
 
         private const string PartyNumber = "";
 
@@ -64,15 +64,15 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         protected override DrawConfigDelegate DrawConfigTree => (ref bool changed) =>
         {
             changed |= ImGui.Checkbox("HP及盾值百分比显示", ref Config.HpPercent);
-            changed |= ImGui.Checkbox("盾值(估计值)替换MP值", ref Config.MpShield);
+            changed |= ImGui.Checkbox("使用盾值(估计值)替换MP值", ref Config.MpShield);
             changed |= ImGui.Checkbox("将护盾条与血条重合显示", ref Config.ShieldShift);
             if (Config.PartyName || Config.Target || Config.Focus)
             {
-                changed |= ImGui.Checkbox("隐藏队伍栏的队友姓名", ref Config.PartyName);
+                changed |= ImGui.Checkbox("将队伍栏的队友姓名替换为职业名", ref Config.PartyName);
                 ImGui.SameLine();
-                changed |= ImGui.Checkbox("隐藏目标栏的队友姓名", ref Config.Target);
+                changed |= ImGui.Checkbox("将目标栏的队友姓名替换为职业名", ref Config.Target);
                 ImGui.SameLine();
-                changed |= ImGui.Checkbox("隐藏焦点栏的队友姓名", ref Config.Focus);
+                changed |= ImGui.Checkbox("将焦点栏的队友姓名替换为职业名", ref Config.Focus);
             }
 
 
@@ -92,7 +92,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     Common.Scanner.ScanText(
                         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
                     new PartyUiUpdate(PartyListUpdateDelegate));
-                if (Config.HpPercent || Config.PartyName) partyUiUpdateHook?.Enable();
+                if (Config.HpPercent || Config.PartyName||Config.MpShield||Config.ShieldShift) partyUiUpdateHook?.Enable();
                 else partyUiUpdateHook?.Disable();
 
                 targetUpdateHook ??= new Hook<MainTargetUiUpdate>(
