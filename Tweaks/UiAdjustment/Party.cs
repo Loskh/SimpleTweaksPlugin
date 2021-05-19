@@ -76,11 +76,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             }
 
 
-            if (changed)
-            {
-                RefreshHooks();
-                if (Config.ShieldShift) ShiftShield();
-            }
+            if (changed) RefreshHooks();
+            
         };
 
 
@@ -114,7 +111,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     new FocusUiUpdate(FocusUpdateDelegate));
                 if (Config.Focus) focusUpdateHook?.Enable();
                 else focusUpdateHook?.Disable();
-                if (!Config.ShieldShift) UnShiftShield();
+                if (!Config.ShieldShift) UnShiftShield()
+                    else ShiftShield();
                 if (!Config.MpShield) ResetMp();
             }
             catch (Exception e)
