@@ -74,9 +74,10 @@ namespace SimpleTweaksPlugin.Tweaks {
                 }
 
             }
-            catch (System.NullReferenceException)
+            catch (System.NullReferenceException e)
             {
-                Dalamud.Plugin.PluginLog.Error("Too much Actors, try to use /target in other area");
+                Dalamud.Plugin.PluginLog.Error("This bug should be fixed. If you see this, please report below log");
+                Dalamud.Plugin.PluginLog.Error(e.ToString());
                 return;
             }
             
