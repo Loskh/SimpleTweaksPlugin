@@ -115,8 +115,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 SimpleLog.Error(ex);
             }
         }
-
-        private const uint NodeSlideCastMarker = 999001; 
         
         public void UpdateCastBar(bool reset = false) {
             var castBar = Common.GetUnitBase<AddonCastBar>();
@@ -134,7 +132,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             var slideMarker = (AtkNineGridNode*) null;
 
             for (var i = 13; i < castBar->AtkUnitBase.UldManager.NodeListCount; i++) {
-                if (castBar->AtkUnitBase.UldManager.NodeList[i]->NodeID == NodeSlideCastMarker) {
+                if (castBar->AtkUnitBase.UldManager.NodeList[i]->NodeID == CustomNodes.SlideCastMarker) {
                     slideMarker = (AtkNineGridNode*) castBar->AtkUnitBase.UldManager.NodeList[i];
                     break;
                 }
@@ -194,7 +192,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                     // Create Node
                     UiHelper.ExpandNodeList((AtkUnitBase*)castBar, 1);
                     slideMarker = UiHelper.CloneNode(progressBar);
-                    slideMarker->AtkResNode.NodeID = NodeSlideCastMarker;
+                    slideMarker->AtkResNode.NodeID = CustomNodes.SlideCastMarker;
                     castBar->AtkUnitBase.UldManager.NodeList[6]->PrevSiblingNode = (AtkResNode*) slideMarker;
                     slideMarker->AtkResNode.NextSiblingNode = castBar->AtkUnitBase.UldManager.NodeList[6];
                     slideMarker->AtkResNode.ParentNode = castBar->AtkUnitBase.UldManager.NodeList[3];
