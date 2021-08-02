@@ -74,6 +74,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         }
 
         private void Update(bool reset = false) {
+            if(PluginInterface.ClientState.LocalPlayer == null) return;
+
             var paramWidget = Common.GetUnitBase("_ParameterWidget");
             if (paramWidget == null) return;
             

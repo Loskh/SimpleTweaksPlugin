@@ -13,7 +13,7 @@ namespace FFXIVClientInterface.Client.UI.Agent {
     [StructLayout(LayoutKind.Explicit, Size = 0x31A8)]
     public unsafe struct AgentMarketStruct {
         [FieldOffset(0x0)] public void* vtbl;
-        [FieldOffset(0x2CBC)] public uint MarketResultItemId;
+        [FieldOffset(0x2CC4)] public uint MarketResultItemId;
         [FieldOffset(0x2CDC)] public uint MarketResultSelectedIndex;
         [FieldOffset(0x2CE4)] public ushort MarketResultSelectedQuantity;
     }

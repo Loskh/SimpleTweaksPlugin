@@ -188,7 +188,7 @@ namespace SimpleTweaksPlugin.Debugging {
             var i = 0;
             
             foreach (var a in windows) {
-                var name = Marshal.PtrToStringAnsi(new IntPtr(a.UnitBase->Name));
+                var name = Helper.Common.PtrToUTF8(new IntPtr(a.UnitBase->Name));
                 ImGui.Text($"[Addon] {name}");
                 ImGui.Indent(15);
                 foreach (var n in a.Nodes) {
@@ -318,7 +318,7 @@ namespace SimpleTweaksPlugin.Debugging {
         private void DrawUnitBase(AtkUnitBase* atkUnitBase) {
 
             var isVisible = (atkUnitBase->Flags & 0x20) == 0x20;
-            var addonName = Marshal.PtrToStringAnsi(new IntPtr(atkUnitBase->Name));
+            var addonName = Helper.Common.PtrToUTF8(new IntPtr(atkUnitBase->Name));
             
             ImGui.Text($"{addonName}");
             ImGui.SameLine();
@@ -497,7 +497,7 @@ namespace SimpleTweaksPlugin.Debugging {
                 {
                     case NodeType.Text:
                         var textNode = (AtkTextNode*)node;
-                        ImGui.Text($"text: {Marshal.PtrToStringAnsi(new IntPtr(textNode->NodeText.StringPtr))}");
+                        ImGui.Text($"text: {Helper.Common.PtrToUTF8(new IntPtr(textNode->NodeText.StringPtr))}");
                         ImGui.SameLine();
                         ImGui.PushStyleColor(ImGuiCol.Text, 0xFF00FFFF);
                         if (ImGui.TreeNode($"Payloads##{(ulong) textNode:X}")) {
@@ -563,7 +563,7 @@ namespace SimpleTweaksPlugin.Debugging {
                         break;
                     case NodeType.Counter:
                         var counterNode = (AtkCounterNode*)node;
-                        ImGui.Text($"text: {Marshal.PtrToStringAnsi(new IntPtr(counterNode->NodeText.StringPtr))}");
+                        ImGui.Text($"text: {Helper.Common.PtrToUTF8(new IntPtr(counterNode->NodeText.StringPtr))}");
                         break;
                     case NodeType.Image:
                         var imageNode = (AtkImageNode*)node;
@@ -576,7 +576,7 @@ namespace SimpleTweaksPlugin.Debugging {
                                 ImGui.Text($"texture type: {texType} part_id={imageNode->PartId} part_id_count={imageNode->PartsList->PartCount}");
                                 if (texType == TextureType.Resource) {
                                     var texFileNamePtr = textureInfo->AtkTexture.Resource->TexFileResourceHandle->ResourceHandle.FileName;
-                                    var texString = Marshal.PtrToStringAnsi(new IntPtr(texFileNamePtr.BufferPtr));
+                                    var texString = Helper.Common.PtrToUTF8(new IntPtr(texFileNamePtr.BufferPtr));
                                     ImGui.Text($"texture path: {texString}");
                                     var kernelTexture = textureInfo->AtkTexture.Resource->KernelTextureObject;
                                     
@@ -662,13 +662,13 @@ namespace SimpleTweaksPlugin.Debugging {
                 {
                     case ComponentType.TextInput:
                         var textInputComponent = (AtkComponentTextInput*)compNode->Component;
-                        ImGui.Text($"InputBase Text1: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->AtkComponentInputBase.UnkText1.StringPtr))}");
-                        ImGui.Text($"InputBase Text2: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->AtkComponentInputBase.UnkText2.StringPtr))}");
-                        ImGui.Text($"Text1: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText1.StringPtr))}");
-                        ImGui.Text($"Text2: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText2.StringPtr))}");
-                        ImGui.Text($"Text3: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText3.StringPtr))}");
-                        ImGui.Text($"Text4: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText4.StringPtr))}");
-                        ImGui.Text($"Text5: {Marshal.PtrToStringAnsi(new IntPtr(textInputComponent->UnkText5.StringPtr))}");
+                        ImGui.Text($"InputBase Text1: {Helper.Common.PtrToUTF8(new IntPtr(textInputComponent->AtkComponentInputBase.UnkText1.StringPtr))}");
+                        ImGui.Text($"InputBase Text2: {Helper.Common.PtrToUTF8(new IntPtr(textInputComponent->AtkComponentInputBase.UnkText2.StringPtr))}");
+                        ImGui.Text($"Text1: {Helper.Common.PtrToUTF8(new IntPtr(textInputComponent->UnkText1.StringPtr))}");
+                        ImGui.Text($"Text2: {Helper.Common.PtrToUTF8(new IntPtr(textInputComponent->UnkText2.StringPtr))}");
+                        ImGui.Text($"Text3: {Helper.Common.PtrToUTF8(new IntPtr(textInputComponent->UnkText3.StringPtr))}");
+                        ImGui.Text($"Text4: {Helper.Common.PtrToUTF8(new IntPtr(textInputComponent->UnkText4.StringPtr))}");
+                        ImGui.Text($"Text5: {Helper.Common.PtrToUTF8(new IntPtr(textInputComponent->UnkText5.StringPtr))}");
                         break;
                 }
 
@@ -779,7 +779,7 @@ namespace SimpleTweaksPlugin.Debugging {
                         selectedInList[i] = true;
                         foundSelected = true;
                     }
-                    var name = Marshal.PtrToStringAnsi(new IntPtr(unitBase->Name));
+                    var name = Helper.Common.PtrToUTF8(new IntPtr(unitBase->Name));
                     if (searching) {
                         if (name == null || !name.ToLower().Contains(searchStr.ToLower())) continue;
                     }

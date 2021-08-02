@@ -14,8 +14,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         private Hook<AddonNameplateOnUpdateDelegate> addonNameplateOnUpdateHook;
 
         public override void Enable() {
-            //addonNameplateOnUpdateHook ??= new Hook<AddonNameplateOnUpdateDelegate>(Common.Scanner.ScanText("48 8B C4 41 56 48 81 EC ?? ?? ?? ?? 48 89 58 F0"), new AddonNameplateOnUpdateDelegate(AddonNameplateOnUpdateDetour));
-            //addonNameplateOnUpdateHook?.Enable();
+            addonNameplateOnUpdateHook ??= new Hook<AddonNameplateOnUpdateDelegate>(Common.Scanner.ScanText("48 8B C4 41 56 48 81 EC ?? ?? ?? ?? 48 89 58 F0"), new AddonNameplateOnUpdateDelegate(AddonNameplateOnUpdateDetour));
+            addonNameplateOnUpdateHook?.Enable();
             base.Enable();
         }
         

@@ -137,9 +137,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             var hide = Config.Hide;
 
             if (Config.Exceptions.Any() && !Config.Hide && !isPreviewing) {
-                // var text = Marshal.PtrToStringAnsi(new IntPtr(toastTextNode->NodeText.StringPtr));
+                // var text = Helper.Common.PtrToUTF8(new IntPtr(toastTextNode->NodeText.StringPtr));
                 // fix text tranfer problem
-                byte[] buffer1 = System.Text.Encoding.Default.GetBytes(Marshal.PtrToStringAnsi(new IntPtr(toastTextNode->NodeText.StringPtr)));
+                byte[] buffer1 = System.Text.Encoding.Default.GetBytes(Helper.Common.PtrToUTF8(new IntPtr(toastTextNode->NodeText.StringPtr)));
                 byte[] buffer2 = System.Text.Encoding.Convert(System.Text.Encoding.UTF8, System.Text.Encoding.Default, buffer1, 0, buffer1.Length);
                 string text = System.Text.Encoding.Default.GetString(buffer2, 0, buffer2.Length);
                 hide = Config.Exceptions.Any(x => text.Contains(x));
@@ -163,7 +163,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 SetOffsetPosition(toastNode1, Config.OffsetXPosition, Config.OffsetYPosition);
 
                 if (isPreviewing) {
-                    var text = Marshal.PtrToStringAnsi(new IntPtr(toastTextNode->NodeText.StringPtr));
+                    var text = Helper.Common.PtrToUTF8(new IntPtr(toastTextNode->NodeText.StringPtr));
                     if (text == String.Empty) {
                         UiHelper.SetText(toastTextNode, "这只是一个预览，不是游戏通知");
                     }

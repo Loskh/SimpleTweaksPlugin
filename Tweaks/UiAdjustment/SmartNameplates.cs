@@ -69,8 +69,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         public override void Enable() {
             config = LoadConfig<Configs>() ?? new Configs();
             targetManager = targetManager != IntPtr.Zero ? targetManager : Common.Scanner.GetStaticAddressFromSig("48 8B 05 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? FF 50 ?? 48 85 DB", 3); // Taken from Dalamud
-            shouldDisplayNameplateHook ??= new Hook<ShouldDisplayNameplateDelegate>(Common.Scanner.ScanText("E8 ?? ?? ?? ?? 89 44 24 40 48 C7 85 ?? ?? ?? ?? ?? ?? ?? ??"), new ShouldDisplayNameplateDelegate(ShouldDisplayNameplateDetour));
-            //shouldDisplayNameplateHook ??= new Hook<ShouldDisplayNameplateDelegate>(Common.Scanner.ScanText("E8 ?? ?? ?? ?? 89 44 24 40 48 C7 85 88 15 02 00 00 00 00 00"), new ShouldDisplayNameplateDelegate(ShouldDisplayNameplateDetour));
+            shouldDisplayNameplateHook ??= new Hook<ShouldDisplayNameplateDelegate>(Common.Scanner.ScanText("E8 ?? ?? ?? ?? 89 44 24 40 48 C7 85 88 15 02 00 00 00 00 00"), new ShouldDisplayNameplateDelegate(ShouldDisplayNameplateDetour));
             shouldDisplayNameplateHook?.Enable();
             base.Enable();
         }

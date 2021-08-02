@@ -114,7 +114,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                     var n = nodeList[i + 3];
                     if (n->AtkResNode.Y == 0) continue;
                     var nameNode = (AtkTextNode*) n->Component->UldManager.NodeList[4];
-                    var name = Marshal.PtrToStringAnsi(new IntPtr(nameNode->NodeText.StringPtr));
+                    var name = Helper.Common.PtrToUTF8(new IntPtr(nameNode->NodeText.StringPtr));
                     names[c] = name;
                     nodes[c++] = n;
                     
@@ -124,7 +124,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
 
                 var inserted = false;
-                var currentServerName = Marshal.PtrToStringAnsi(new IntPtr(CurrentWorldName->NodeText.StringPtr));
+                var currentServerName = Helper.Common.PtrToUTF8(new IntPtr(CurrentWorldName->NodeText.StringPtr));
                 for (var i = 0; i < c; i++) {
                     if (!inserted) {
                         var s = string.Compare(names[i], currentServerName, StringComparison.InvariantCultureIgnoreCase);

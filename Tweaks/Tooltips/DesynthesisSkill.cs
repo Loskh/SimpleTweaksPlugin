@@ -48,7 +48,7 @@ namespace SimpleTweaksPlugin.Tweaks.Tooltips {
                 if (item != null && item.Desynth > 0) {
                     var classJobOffset = 2 * (int)(item.ClassJobRepair.Row - 8);
                     // 5.5 0x6A6
-                    var desynthLevel = *(ushort*)(Common.PlayerStaticAddress + (0x69A + classJobOffset)) / 100f;
+                    var desynthLevel = *(ushort*)(Common.PlayerStaticAddress + (0x6A6 + classJobOffset)) / 100f;
                     var desynthDelta = item.LevelItem.Row - desynthLevel;
 
                     var useDescription = desynthesisInDescription.Contains(item.ItemSearchCategory.Row);
