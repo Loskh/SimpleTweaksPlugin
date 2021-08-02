@@ -188,7 +188,7 @@ namespace SimpleTweaksPlugin.Helper {
             Process.Start(new ProcessStartInfo {FileName = url, UseShellExecute = true});
         }
 
-        public string PtrToUTF8(IntPtr ptr){
+        public static string PtrToUTF8(IntPtr ptr){
             byte[] bytes = System.Text.Encoding.Unicode.GetBytes(Marshal.PtrToStringUni(ptr));//转成UNICODE编码
             string dec = System.Text.Encoding.UTF8.GetString(bytes);//再转成UTF8
             return dec;

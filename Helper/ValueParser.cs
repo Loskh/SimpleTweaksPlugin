@@ -26,7 +26,7 @@ namespace SimpleTweaksPlugin.Helper {
                 }
 
                 var addr = (byte*) (parentAddr + (ulong)fieldOffset.Value);
-                var str = Helper.Common.PtrToUTF8(new IntPtr(addr), fixedBuffer.Length);
+                var str = Helper.Common.PtrToUTF8(new IntPtr(addr));
                 return $"{str}";
             }
         }

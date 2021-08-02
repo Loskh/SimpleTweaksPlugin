@@ -66,7 +66,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                     // Wanderer
                     customization = config.WandererCustomization;
                 } else {
-                    companyTag = Encoding.UTF8.GetString(battleChara->Character.FreeCompanyTag).Trim('\0', ' ');
+                    companyTag = Encoding.UTF8.GetString(battleChara->Character.FreeCompanyTag, 6).Trim('\0', ' ');
 
                     customization = companyTag.Length switch {
                         <= 0 => null,
