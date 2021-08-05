@@ -6,19 +6,19 @@ using SimpleTweaksPlugin.TweakSystem;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class PartyListLayout : UiAdjustments.SubTweak {
-        public override string Name => "Party List Layout";
-        public override string Description => "Change the number of columns used in the party list.";
+        public override string Name => "修改小队布局";
+        public override string Description => "修改小队列表布局.";
 
         public override bool Experimental => true;
 
         public class Configs : TweakConfig {
-            [TweakConfigOption("Column Count", EditorSize = 150, IntMin = 1, IntMax = 8, IntType = TweakConfigOptionAttribute.IntEditType.Slider)]
+            [TweakConfigOption("列数", EditorSize = 150, IntMin = 1, IntMax = 8, IntType = TweakConfigOptionAttribute.IntEditType.Slider)]
             public int Columns = 1;
 
-            [TweakConfigOption("Extra X Separation", EditorSize = 350, IntMin = -50, IntMax = 200, IntType = TweakConfigOptionAttribute.IntEditType.Slider)]
+            [TweakConfigOption("水平间隔", EditorSize = 350, IntMin = -50, IntMax = 200, IntType = TweakConfigOptionAttribute.IntEditType.Slider)]
             public int XOffset = 0;
             
-            [TweakConfigOption("Extra Y Separation", EditorSize = 350, IntMin = -50, IntMax = 200, IntType = TweakConfigOptionAttribute.IntEditType.Slider)]
+            [TweakConfigOption("垂直间隔", EditorSize = 350, IntMin = -50, IntMax = 200, IntType = TweakConfigOptionAttribute.IntEditType.Slider)]
             public int YOffset = 0;
         }
         
