@@ -1,5 +1,4 @@
 ﻿using System;
-using Dalamud.Game.Internal;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.Helper;
@@ -27,33 +26,38 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
         public override bool UseAutoConfig => true;
 
+        private delegate void* PartyListOnUpdate(AddonPartyList* @this, void* a2, void* a3);
+        private HookWrapper<PartyListOnUpdate> partyListOnUpdateHook;
+        
+        
         public override void Enable() {
             Config = LoadConfig<Configs>() ?? new Configs();
-            PluginInterface.Framework.OnUpdateEvent += FrameworkUpdate;
+            partyListOnUpdateHook ??= Common.Hook<PartyListOnUpdate>("48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 48 8B 7A 20", PartyListUpdateDetour, false);
+            partyListOnUpdateHook?.Enable();
             base.Enable();
         }
-        
-        public override void Disable() {
-            SaveConfig(Config);
-            PluginInterface.Framework.OnUpdateEvent -= FrameworkUpdate;
-            Update(true);
-            base.Disable();
-        }
-        
-        private void FrameworkUpdate(Framework framework) {
+
+        private void* PartyListUpdateDetour(AddonPartyList* @this, void* a2, void* a3) {
+            var ret = partyListOnUpdateHook.Original(@this, a2, a3);
             try {
-                Update();
+                Update(@this);
             } catch (Exception ex) {
                 SimpleLog.Error(ex);
             }
+            return ret;
+        }
+
+        public override void Disable() {
+            partyListOnUpdateHook?.Disable();
+            SaveConfig(Config);
+            Update(Common.GetUnitBase<AddonPartyList>(), true);
+            base.Disable();
         }
 
         private const int XSeparation = 260;
         private const int YSeparation = 80;
         
-        private void Update(bool reset = false) {
-
-            var partyList = Common.GetUnitBase<AddonPartyList>();
+        private void Update(AddonPartyList* partyList, bool reset = false) {
             if (partyList == null) return;
             
             if (partyList->AtkUnitBase.UldManager.NodeListSize < 17) return;
@@ -69,6 +73,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                     UpdateSlot(cNode, visibleIndex, ref maxX, ref maxY, reset);
                 }
                 if (cNode->AtkResNode.IsVisible) visibleIndex++;
+
+                if (i == 6 && cNode->AtkResNode.IsVisible) {
+                    // Chocobo Timer
+                    partyList->MpBarSpecialResNode->SetPositionFloat(153 + cNode->AtkResNode.X, 60 + cNode->AtkResNode.Y);
+                }
             }
             
             // Collision Node Update
