@@ -12,7 +12,7 @@ using SimpleTweaksPlugin.TweakSystem;
 #if DEBUG
 using SimpleTweaksPlugin.Debugging;
 #endif
-
+#if DEBUG
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class PartyListLayout : UiAdjustments.SubTweak {
         public override string Name => "修改小队布局";
@@ -507,3 +507,4 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         }
     }
 }
+#endif
