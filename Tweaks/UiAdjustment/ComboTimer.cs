@@ -58,6 +58,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             base.Enable();
         }
         
+        public override void Setup() {
+            comboActions.Add(7526, 80); // Verholy to Scorch Combo
+            base.Setup();
+        }
+
         public override void Disable() {
             SaveConfig(Config);
             PluginInterface.Framework.OnUpdateEvent -= FrameworkUpdate;
@@ -96,7 +101,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 var newStrPtr = Common.Alloc(512);
                 textNode->NodeText.StringPtr = (byte*) newStrPtr;
                 textNode->NodeText.BufSize = 512;
-                UiHelper.SetText(textNode, "00.00");
+                textNode->SetText("00.00");
                 UiHelper.ExpandNodeList(paramWidget, 1);
                 paramWidget->UldManager.NodeList[paramWidget->UldManager.NodeListCount++] = (AtkResNode*) textNode;
                 
@@ -141,9 +146,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 textNode->LineSpacing = (byte) (this.Config.FontSize);
                 textNode->CharSpacing = 1;
                 if (comboAvailable) {
-                    UiHelper.SetText(textNode, Config.NoComboText ? $"{combo->Timer:00.00}" : $"连击\n{combo->Timer:00.00}");
+                    textNode->SetText(textNode, Config.NoComboText ? $"{combo->Timer:00.00}" : $"连击\n{combo->Timer:00.00}");
                 } else {
-                    UiHelper.SetText(textNode, Config.NoComboText ? $"00.00" : $"连击\n00.00");
+                    textNode->SetText(textNode, Config.NoComboText ? $"00.00" : $"连击\n00.00");
                 }
                 
             } else { 

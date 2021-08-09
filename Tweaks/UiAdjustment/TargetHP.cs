@@ -182,7 +182,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 var newStrPtr = Common.Alloc(512);
                 textNode->NodeText.StringPtr = (byte*) newStrPtr;
                 textNode->NodeText.BufSize = 512;
-                UiHelper.SetText(textNode, "");
+                textNode->SetText("");
                 UiHelper.ExpandNodeList(gauge, 1);
                 gauge->Component->UldManager.NodeList[gauge->Component->UldManager.NodeListCount++] = (AtkResNode*) textNode;
 
@@ -231,9 +231,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 if (Config.EnableEffectiveDistance){
                     y += "  " + target.YalmDistanceX.ToString();
                 }
-                UiHelper.SetText(textNode, $"{FormatNumber(chara.CurrentHp)}/{FormatNumber(chara.MaxHp)}"+y);
+                textNode->SetText(textNode, $"{FormatNumber(chara.CurrentHp)}/{FormatNumber(chara.MaxHp)}"+y);
             } else {
-                UiHelper.SetText(textNode, "");
+                textNode->SetText("");
             }
         }
 
