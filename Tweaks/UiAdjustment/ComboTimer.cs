@@ -146,9 +146,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 textNode->LineSpacing = (byte) (this.Config.FontSize);
                 textNode->CharSpacing = 1;
                 if (comboAvailable) {
-                    textNode->SetText(textNode, Config.NoComboText ? $"{combo->Timer:00.00}" : $"连击\n{combo->Timer:00.00}");
+                    textNode->SetText(Config.NoComboText ? $"{combo->Timer:00.00}" : $"连击\n{combo->Timer:00.00}");
                 } else {
-                    textNode->SetText(textNode, Config.NoComboText ? $"00.00" : $"连击\n00.00");
+                    textNode->SetText(Config.NoComboText ? $"00.00" : $"连击\n00.00");
                 }
                 
             } else { 

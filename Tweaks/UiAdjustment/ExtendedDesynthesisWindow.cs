@@ -214,7 +214,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 UiHelper.ExpandNodeList(atkUnitBase, 2);
                 var newHeaderItem = (AtkTextNode*)UiHelper.CloneNode(nodeList[6]);
                 newHeaderItem->NodeText.StringPtr = (byte*)UiHelper.Alloc((ulong)newHeaderItem->NodeText.BufSize);
-                newHeaderItem->SetText(newHeaderItem, "技能");
+                newHeaderItem->SetText("技能");
                 
                 newHeaderItem->AtkResNode.X = NewWidth - (AddedWidth + 60);
                 newHeaderItem->AtkResNode.Width = AddedWidth;
@@ -225,7 +225,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 
                 var gsHeaderItem = (AtkTextNode*)UiHelper.CloneNode(nodeList[6]);
                 gsHeaderItem->NodeText.StringPtr = (byte*)UiHelper.Alloc((ulong)gsHeaderItem->NodeText.BufSize);
-                gsHeaderItem->SetText(gsHeaderItem, "套装");
+                gsHeaderItem->SetText("套装");
                 gsHeaderItem->TextFlags |= (byte) TextFlags.MultiLine;
                 gsHeaderItem->AtkResNode.X = NewWidth - 80;
                 gsHeaderItem->AlignmentFontType = (byte) AlignmentType.Bottom;

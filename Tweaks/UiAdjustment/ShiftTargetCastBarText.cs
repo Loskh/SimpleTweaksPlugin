@@ -172,7 +172,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 var newStrPtr = Common.Alloc(512);
                 textNode->NodeText.StringPtr = (byte*) newStrPtr;
                 textNode->NodeText.BufSize = 512;
-                UiHelper.SetText(textNode, "");
+                textNode->SetText("");
                 UiHelper.ExpandNodeList(unit, 1);
                 unit->UldManager.NodeList[unit->UldManager.NodeListCount++] = (AtkResNode*) textNode;
 
@@ -199,7 +199,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 //    PluginConfig.UiAdjustments.ShiftTargetCastBarText.CastTimeOffsetY);
                 //UiHelper.SetSize(textNode, cloneTextNode->AtkResNode.Width, cloneTextNode->AtkResNode.Height);
                 textNode->FontSize = 15;//(byte) PluginConfig.UiAdjustments.ShiftTargetCastBarText.CastTimeFontSize;
-                UiHelper.SetText(textNode, GetTargetCastTime().ToString("00.00"));
+                textNode->SetText(GetTargetCastTime().ToString("00.00"));
                 UiHelper.Show(textNode);
             }
 

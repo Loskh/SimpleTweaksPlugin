@@ -231,7 +231,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 if (Config.EnableEffectiveDistance){
                     y += "  " + target.YalmDistanceX.ToString();
                 }
-                textNode->SetText(textNode, $"{FormatNumber(chara.CurrentHp)}/{FormatNumber(chara.MaxHp)}"+y);
+                textNode->SetText($"{FormatNumber(chara.CurrentHp)}/{FormatNumber(chara.MaxHp)}"+y);
             } else {
                 textNode->SetText("");
             }
