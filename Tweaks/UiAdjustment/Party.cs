@@ -8,6 +8,8 @@ using SimpleTweaksPlugin.Helper;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using SimpleTweaksPlugin.Debugging;
 using SimpleTweaksPlugin.GameStructs;
 
 
@@ -68,11 +70,13 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             changed |= ImGui.Checkbox("将护盾条与血条重合显示", ref Config.ShieldShift);
             if (Config.PartyName || Config.Target || Config.Focus)
             {
+                #if DEBUG
                 changed |= ImGui.Checkbox("将队伍栏的队友姓名替换为职业名", ref Config.PartyName);
                 ImGui.SameLine();
                 changed |= ImGui.Checkbox("将目标栏的队友姓名替换为职业名", ref Config.Target);
                 ImGui.SameLine();
                 changed |= ImGui.Checkbox("将焦点栏的队友姓名替换为职业名", ref Config.Focus);
+                #endif
             }
             if (changed) RefreshHooks();
         };
@@ -160,10 +164,15 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 //SimpleLog.Information("L1:" + l1.ToString("X") + " L2:" + l2.ToString("X"));
                 //SimpleLog.Information("L3:" + l3.ToString("X"));
             }
-
-            UpdatePartyUi(false);
-            var ret = partyUiUpdateHook.Original(a1, a2, a3);
-            UpdatePartyUi(true);
+#if DEBUG
+                PerformanceMonitor.Begin("PartyListLayout.Update");
+#endif
+                UpdatePartyUi(false);
+                var ret = partyUiUpdateHook.Original(a1, a2, a3);
+                UpdatePartyUi(true);
+#if DEBUG
+                PerformanceMonitor.End("PartyListLayout.Update");
+#endif
             return ret;
         }
 
@@ -407,17 +416,21 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 for (var index = 0; index < data->LocalCount + data->CrossRealmCount; index++)
                     if (!done) //改名
                     {
+#if DEBUG
                         if (!Config.PartyName) return;
                         var address = (byte*) *((long*) l3 + 13 * index);
                         var job = data->MemberData(index).JobId;
+                        SplitString(Plugin.Common.ReadSeString(address).TextValue, true, out var lvl,
+                            out var namejob);
 
                         job = job > 0xF293 ? job - 0xF294 : 0;
-                        if (Plugin.Common.ReadSeString(address).TextValue != GetJobName(job) ||
+                        if (namejob != GetJobName(job) ||
                             data->MemberData(index).JobId != party->JobId[index])
                         {
-                            Plugin.Common.WriteSeString(address, GetJobName(job));
+                            Plugin.Common.WriteSeString(address, lvl+" "+GetJobName(job));
                             *((byte*) data + 0x1C + index * 0x9C) = 1; //Changed
                         }
+#endif
                     }
                     else //改HP
                     {
