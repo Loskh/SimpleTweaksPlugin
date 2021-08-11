@@ -9,7 +9,9 @@ using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+#if DEBUG
 using SimpleTweaksPlugin.Debugging;
+#endif
 using SimpleTweaksPlugin.GameStructs;
 
 
@@ -424,11 +426,11 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                             out var namejob);
 
                         job = job > 0xF293 ? job - 0xF294 : 0;
-                        if (namejob != GetJobName(job) ||
+                        if (Plugin.Common.ReadSeString(address).TextValue != GetJobName(job) ||
                             data->MemberData(index).JobId != party->JobId[index])
                         {
-                            Plugin.Common.WriteSeString(address, lvl+" "+GetJobName(job));
-                            *((byte*) data + 0x1C + index * 0x9C) = 1; //Changed
+                            Plugin.Common.WriteSeString(address, GetJobName(job));
+                            *((byte*)data + 0x1C + index * 0x9C) = 1; //Changed
                         }
 #endif
                     }

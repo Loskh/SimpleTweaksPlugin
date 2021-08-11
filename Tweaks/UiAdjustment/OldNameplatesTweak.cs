@@ -1,11 +1,12 @@
 ﻿using Dalamud.Hooking;
+using Dalamud.Plugin;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using SimpleTweaksPlugin.Helper;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class OldNameplatesTweak : UiAdjustments.SubTweak {
-        public override string Name => "老版本姓名版";
+        public override string Name => "老版本姓名版(不要和JobIcons一起开,炸给你看哦)";
         public override string Description => "显示5.5版本前的姓名版样式.";
         protected override string Author => "aers";
 
@@ -31,6 +32,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
         private void AddonNameplateOnUpdateDetour(AddonNamePlate* thisPtr, NumberArrayData** numberData,
             StringArrayData** stringData) {
+            //PluginLog.Error((((long)numberData[5]->IntArray)+0xC).ToString("X")+"@"+numberData[5]->IntArray[3]);
             numberData[5]->IntArray[3] = 1;
             this.addonNameplateOnUpdateHook.Original(thisPtr, numberData, stringData);
         }

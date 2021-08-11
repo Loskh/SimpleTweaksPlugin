@@ -12,15 +12,15 @@ using SimpleTweaksPlugin.Debugging;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class HideJobGauge : UiAdjustments.SubTweak {
-        public override string Name => "Hide Job Gauge";
-        public override string Description => "Allow hiding the job gauge while not in combat or dungeons.";
+        public override string Name => "隐藏职业量谱";
+        public override string Description => "在非副本或战斗中隐藏职业量谱.";
 
         public class Configs : TweakConfig {
 
-            [TweakConfigOption("Show In Duty", 1)]
+            [TweakConfigOption("副本中显示", 1)]
             public bool ShowInDuty;
 
-            [TweakConfigOption("Show In Combat", 2)]
+            [TweakConfigOption("战斗中显示", 2)]
             public bool ShowInCombat;
 
         }
@@ -30,8 +30,8 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         
         public override void Enable() {
             Config = LoadConfig<Configs>() ?? new Configs();
-            PluginLog.Log("What?");
-            SimpleLog.Log("Enable");
+            PluginLog.Debug("What?");
+            SimpleLog.Debug("Enable");
             PluginInterface.Framework.OnUpdateEvent += FrameworkUpdate;
             base.Enable();
         }

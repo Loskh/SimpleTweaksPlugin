@@ -97,21 +97,23 @@ namespace SimpleTweaksPlugin.Tweaks.Tooltips {
                 var baseParamDeltas = new Dictionary<uint, int>();
                 var baseParamOriginal = new Dictionary<uint, int>();
                 var baseParamLimits = new Dictionary<uint, int>();
+                
                 foreach (var bp in item.BaseParam) {
+                    
                     if (bp.Value == 0 || bp.BaseParam.Row == 0) continue;
                     baseParamDeltas.Add(bp.BaseParam.Row, 0);
                     baseParamOriginal.Add(bp.BaseParam.Row, bp.Value);
                     baseParamLimits.Add(bp.BaseParam.Row, (int) Math.Ceiling(itemLevel.BaseParam[bp.BaseParam.Row] * (bp.BaseParam.Value.EquipSlotCategoryPct[item.EquipSlotCategory.Row] / 100f)) );
                     baseParams.Add(bp.BaseParam.Row, bp.BaseParam.Value);
                 }
-
+                
                 if (itemInfo.IsHQ) {
                     foreach (var bp in item.BaseParamSpecial) {
                         if (bp.Value == 0 || bp.BaseParam.Row == 0) continue;
                         if (baseParamOriginal.ContainsKey(bp.BaseParam.Row)) baseParamOriginal[bp.BaseParam.Row] += bp.Value;
                     }
                 }
-
+                
                 if (baseParamDeltas.Count == 0) return;
                 
                 foreach (var (materiaId, level) in itemInfo.Materia()) {
@@ -119,13 +121,13 @@ namespace SimpleTweaksPlugin.Tweaks.Tooltips {
                     var materia = PluginInterface.Data.Excel.GetSheet<Materia>().GetRow(materiaId);
                     if (materia == null) continue;
                     if (materia.BaseParam.Row == 0) continue;
+                    
                     if (!baseParamDeltas.ContainsKey(materia.BaseParam.Row)) continue;
                     baseParamDeltas[materia.BaseParam.Row] += materia.Value[level];
                 }
                 foreach (var bp in baseParamDeltas) {
                     var param = baseParams[bp.Key];
                     if (bp.Value == 0) continue;
-
                     foreach (var field in Fields()) {
                         var data = tooltip[field];
                         if (data == null) continue;

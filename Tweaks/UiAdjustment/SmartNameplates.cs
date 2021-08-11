@@ -24,7 +24,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
         private Configs config;
 
-        private const int statusFlagsOffset = 0x1980;//0x19A0; 5.5
+        private const int statusFlagsOffset = 0x19A0; 
         private IntPtr targetManager = IntPtr.Zero;
         private delegate byte ShouldDisplayNameplateDelegate(IntPtr raptureAtkModule, IntPtr actor, IntPtr localPlayer, float distance);
         private Hook<ShouldDisplayNameplateDelegate> shouldDisplayNameplateHook;
@@ -69,7 +69,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         public override void Enable() {
             config = LoadConfig<Configs>() ?? new Configs();
             targetManager = targetManager != IntPtr.Zero ? targetManager : Common.Scanner.GetStaticAddressFromSig("48 8B 05 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? FF 50 ?? 48 85 DB", 3); // Taken from Dalamud
-            shouldDisplayNameplateHook ??= new Hook<ShouldDisplayNameplateDelegate>(Common.Scanner.ScanText("48 8B CD E8 ?? ?? ?? ?? 89 44 24 40"), new ShouldDisplayNameplateDelegate(ShouldDisplayNameplateDetour));
+            shouldDisplayNameplateHook ??= new Hook<ShouldDisplayNameplateDelegate>(Common.Scanner.ScanText("E8 ?? ?? ?? ?? 89 44 24 40 48 C7 85 ?? ?? ?? ?? ?? ?? ?? ??"), new ShouldDisplayNameplateDelegate(ShouldDisplayNameplateDetour));
             shouldDisplayNameplateHook?.Enable();
             base.Enable();
         }
