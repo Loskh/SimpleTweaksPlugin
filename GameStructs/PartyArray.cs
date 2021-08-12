@@ -53,14 +53,14 @@ namespace SimpleTweaksPlugin.GameStructs
         [FieldOffset(0x328)] private MemberData MemberData5;
         [FieldOffset(0x3C4)] private MemberData MemberData6;
         [FieldOffset(0x460)] private MemberData MemberData7;
-        //[FieldOffset(0x4FC)] private MemberData MemberData8;
-        //[FieldOffset(0x59C)] private MemberData MemberData9;
-        //[FieldOffset(0x638)] private MemberData MemberData10;
-        //[FieldOffset(0x6D4)] private MemberData MemberData11;
-        //[FieldOffset(0x770)] private MemberData MemberData12;
+        
+        [FieldOffset(0x4FC)] public int QinXinCount;
+        [FieldOffset(0x500)] private MemberData MemberData8;
+        [FieldOffset(0x59C)] private MemberData MemberData9;
+        [FieldOffset(0x638)] private MemberData MemberData10;
 
-
-        [FieldOffset(0x4FC)] public int CrossRealmCount;
+        [FieldOffset(0x6D4)] private MemberData MemberData11;
+        [FieldOffset(0x770)] private MemberData MemberData12;
 
         [FieldOffset(0x80C)] public int CPCount;
         [FieldOffset(0x810)] public int PetCount;
