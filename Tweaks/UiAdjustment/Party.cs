@@ -54,6 +54,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private PartyUi* party;
         private DataArray* data;
+        private PartyStrings* stringarray;
 
         private AtkTextNode* focusTextNode;
         private AtkTextNode* tTextNode;
@@ -92,28 +93,32 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     Common.Scanner.ScanText(
                         "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC ?? 48 8B 7A ?? 48 8B D9 49 8B 70 ?? 48 8B 47"),
                     new PartyUiUpdate(PartyListUpdateDelegate));
-                if (Enabled) partyUiUpdateHook?.Enable();
-                else partyUiUpdateHook?.Disable();
-
+                
                 targetUpdateHook ??= new Hook<MainTargetUiUpdate>(
                     Common.Scanner.ScanText(
                         "40 55 57 41 56 48 83 EC 40 48 8B 6A 48 48 8B F9 4D 8B 70 40 48 85 ED 0F 84 ?? ?? ?? ?? 4D 85 F6 0F 84 ?? ?? ?? ?? 48 8B 45 20 48 89 74 24 ?? 4C 89 7C 24 ?? 44 0F B6 B9 ?? ?? ?? ?? 83 38 00 8B 70 08 0F 95 C0"),
                     new MainTargetUiUpdate(TargetUpdateDelegate));
-                if (Config.Target) targetUpdateHook?.Enable();
-                else targetUpdateHook?.Disable();
-
+                
                 mainTargetUpdateHook ??= new Hook<MainTargetUiUpdate>(
                     Common.Scanner.ScanText(
                         "40 55 57 41 56 48 83 EC 40 48 8B 6A 48 48 8B F9 4D 8B 70 40 48 85 ED 0F 84 ?? ?? ?? ?? 4D 85 F6 0F 84 ?? ?? ?? ?? 48 8B 45 20 48 89 74 24 ?? 4C 89 7C 24 ?? 44 0F B6 B9 ?? ?? ?? ?? 83 38 00 8B 70 08 0F 94 C0"),
                     new MainTargetUiUpdate(MainTargetUpdateDelegate));
-                if (Config.Target) mainTargetUpdateHook?.Enable();
-                else mainTargetUpdateHook?.Disable();
-
+                
                 focusUpdateHook ??= new Hook<FocusUiUpdate>(
                     Common.Scanner.ScanText("40 53 41 54 41 56 41 57 48 83 EC 78 4C 8B 7A 48"),
                     new FocusUiUpdate(FocusUpdateDelegate));
+
+                if (Enabled) partyUiUpdateHook?.Enable();
+                else partyUiUpdateHook?.Disable();
+#if DEBUG
+                if (Config.Target) targetUpdateHook?.Enable();
+                else targetUpdateHook?.Disable();
+                if (Config.Target) mainTargetUpdateHook?.Enable();
+                else mainTargetUpdateHook?.Disable();
                 if (Config.Focus) focusUpdateHook?.Enable();
                 else focusUpdateHook?.Disable();
+#endif
+                
                 if (!Config.ShieldShift) UnShiftShield();
                     else ShiftShield();
                 if (!Config.MpShield) ResetMp();
@@ -159,6 +164,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 l3 = (IntPtr) (*(long*) (*(long*) (a3 + 0x18) + 0x20) + 0x30); //+Index*0x68
                 party = (PartyUi*) l1;
                 data = (DataArray*) l2;
+                stringarray = (PartyStrings*)l3;
 
                 if (Config.ShieldShift) ShiftShield();
 
@@ -236,9 +242,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private void SetName(AtkTextNode* node, string payload)
         {
             if (node == null || payload == string.Empty) return;
-            var seString = new SeString(new List<Payload>());
-            seString.Payloads.Add(new TextPayload(payload));
-            Plugin.Common.WriteSeString(node->NodeText, seString);
+            Plugin.Common.WriteSeString(node->NodeText, payload);
         }
 
         private void SetHp(AtkTextNode* node, MemberData member)
@@ -276,7 +280,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
 
         private string GetJobName(int id)
         {
-            if (id < 0 || id > 38) return "";
+            if (id < 0 || id > 38) return "打开方式不对";
             return PluginInterface.ClientState.ClientLanguage == ClientLanguage.English
                 ? PluginInterface.Data.Excel.GetSheet<Lumina.Excel.GeneratedSheets.ClassJob>().GetRow((uint) id)
                     .NameEnglish
@@ -299,17 +303,25 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             return null;
         }
 
-        private int GetIndex(SeString name)
+        private int GetIndex(string name)
         {
             try
             {
                 if (l1 == IntPtr.Zero) return -1;
-                for (var i = 0; i < data->LocalCount + data->CrossRealmCount; i++)
+                if (data->QinXinCount > 0)
                 {
-                    var ptr = *((long*) l3 + i * 13) + 0x68;
-                    if (Plugin.Common.ReadSeString((byte*) ptr).TextValue == name.TextValue) return i;
+                    for (var i = 8; i < 8 + data->QinXinCount; i++)
+                    {
+                        if (stringarray->MemberStrings(i).GetName() == name) return i;
+                    }
                 }
-
+                else
+                {
+                    for (var i = 0; i <data->PlayerCount; i++)
+                    {
+                        if (stringarray->MemberStrings(i).GetName() == name) return i;
+                    }
+                }
                 return -1;
             }
             catch (Exception e)
@@ -328,18 +340,19 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
             for (var i = 0; i < 12; i++)
             {
                 var hpBarComponentBase = party->Member(i).hpBarComponentBase;
+                
                 if (hpBarComponentBase == null) return;
                 var shieldNode = (AtkNineGridNode*) GetNodeById(hpBarComponentBase, 5);
                 var overShieldNode = (AtkImageNode*) GetNodeById(hpBarComponentBase, 2);
                 if (shieldNode != null)
-                    if (Math.Abs(shieldNode->AtkResNode.OriginY - 8f) < 1f)
+                    if (Math.Abs(shieldNode->AtkResNode.OriginY) < 1f)
                     {
                         shieldNode->AtkResNode.OriginY += 8f;
                         *(float*) ((long) shieldNode + 0x6C) += 8f;
                     }
 
                 if (overShieldNode != null)
-                    if (Math.Abs(overShieldNode->AtkResNode.OriginY - 8f) < 1f)
+                    if (Math.Abs(overShieldNode->AtkResNode.OriginY) < 1f)
                     {
                         overShieldNode->AtkResNode.OriginY += 8f;
                         *(float*) ((long) overShieldNode + 0x6C) += 8f;
@@ -357,14 +370,14 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                 var shieldNode = (AtkNineGridNode*) GetNodeById(hpBarComponentBase, 5);
                 var overShieldNode = (AtkImageNode*) GetNodeById(hpBarComponentBase, 2);
                 if (shieldNode != null)
-                    if (Math.Abs(shieldNode->AtkResNode.OriginY - 16f) < 1f)
+                    if (Math.Abs(shieldNode->AtkResNode.OriginY - 8f) < 1f)
                     {
                         shieldNode->AtkResNode.OriginY -= 8f;
                         *(float*) ((long) shieldNode + 0x6C) -= 8f;
                     }
 
                 if (overShieldNode != null)
-                    if (Math.Abs(overShieldNode->AtkResNode.OriginY - 16f) < 1f)
+                    if (Math.Abs(overShieldNode->AtkResNode.OriginY - 8f) < 1f)
                     {
                         overShieldNode->AtkResNode.OriginY -= 8f;
                         *(float*) ((long) overShieldNode + 0x6C) -= 8f;
@@ -376,6 +389,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             if (l1 == IntPtr.Zero) return;
             var memberData = data->MemberData(index);
+            if (memberData.HasMP == 0 ) return;
             var shield = memberData.ShieldPercent * memberData.MaxHp / 100;
             var node1 = (AtkTextNode*) GetNodeById(party->Member(index).mpBarComponentBase, 3);
             var node2 = (AtkTextNode*) GetNodeById(party->Member(index).mpBarComponentBase, 2);
@@ -398,7 +412,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         private void ResetMp()
         {
             if (l1 == IntPtr.Zero) return;
-            for (var index = 0; index < 12; index++)
+            for (var index = 0; index < 8; index++)
             {
                 var node1 = (AtkTextNode*) GetNodeById(party->Member(index).mpBarComponentBase, 3);
                 if (node1 == null) return;
@@ -415,21 +429,24 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             try
             {
-                for (var index = 0; index < data->LocalCount + data->CrossRealmCount; index++)
+                for (var index = 0; index < 11; index++)
+                {
+                    if (index >= data->PlayerCount && index < 8 || index >= 8 + data->QinXinCount ) continue;
                     if (!done) //改名
                     {
 #if DEBUG
                         if (!Config.PartyName) return;
-                        var address = (byte*) *((long*) l3 + 13 * index);
+                        if (index >= 8) return;
+                        var lvlname = stringarray->MemberStrings(index).GetLvlName();
                         var job = data->MemberData(index).JobId;
-                        SplitString(Plugin.Common.ReadSeString(address).TextValue, true, out var lvl,
+                        SplitString(lvlname, true, out var lvl,
                             out var namejob);
 
                         job = job > 0xF293 ? job - 0xF294 : 0;
-                        if (Plugin.Common.ReadSeString(address).TextValue != GetJobName(job) ||
+                        if (namejob != GetJobName(job) ||
                             data->MemberData(index).JobId != party->JobId[index])
                         {
-                            Plugin.Common.WriteSeString(address, GetJobName(job));
+                            Plugin.Common.WriteSeString(stringarray->MemberStrings(index).Name, lvl+" "+GetJobName(job));
                             *((byte*)data + 0x1C + index * 0x9C) = 1; //Changed
                         }
 #endif
@@ -438,12 +455,12 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
                     {
                         if (Config.HpPercent)
                         {
-                            var textNode = (AtkTextNode*) GetNodeById(party->Member(index).hpComponentBase, 2);
+                            var textNode = (AtkTextNode*)GetNodeById(party->Member(index).hpComponentBase, 2);
                             if (textNode != null) SetHp(textNode, data->MemberData(index));
                         }
-
                         if (Config.MpShield) ShieldOnMp(index);
                     }
+                }
             }
             catch (Exception e)
             {
@@ -456,12 +473,14 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment
         {
             try
             {
+                if (tTextNode == null || ttTextNode == null) return;
                 var tname = Plugin.Common.ReadSeString(tTextNode->NodeText.StringPtr).TextValue.Trim();
                 var ttname = Plugin.Common.ReadSeString(ttTextNode->NodeText.StringPtr).TextValue.Trim();
                 if (tname.Length >= 1)
                 {
                     var number = tname.Substring(0, 1);
                     if (PartyNumber.Contains(number)) tname = tname.Substring(1);
+                    else SplitString(tname, true, out tname, out _);
                     var index = GetIndex(tname);
                     if (index != -1)
                     {

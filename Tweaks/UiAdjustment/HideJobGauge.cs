@@ -12,7 +12,7 @@ using SimpleTweaksPlugin.Debugging;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class HideJobGauge : UiAdjustments.SubTweak {
-        public override string Name => "隐藏职业量谱";
+        public override string Name => "隐藏职业量谱(爆炸中,请勿尝试)";
         public override string Description => "在非副本或战斗中隐藏职业量谱.";
 
         public class Configs : TweakConfig {
@@ -32,8 +32,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             Config = LoadConfig<Configs>() ?? new Configs();
             PluginLog.Debug("What?");
             SimpleLog.Debug("Enable");
-            PluginInterface.Framework.OnUpdateEvent += FrameworkUpdate;
+            //PluginInterface.Framework.OnUpdateEvent += FrameworkUpdate;
             base.Enable();
+            Disable();
         }
         
         private void FrameworkUpdate(Framework framework) {
@@ -73,7 +74,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         }
 
         public override void Disable() {
-            PluginInterface.Framework.OnUpdateEvent -= FrameworkUpdate;
+            //PluginInterface.Framework.OnUpdateEvent -= FrameworkUpdate;
             try {
                 Update(true);
             } catch {
