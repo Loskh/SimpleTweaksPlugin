@@ -14,7 +14,7 @@
     </PropertyGroup>
     <PropertyGroup Label="Feature">
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-        <Version>1.5.0.10</Version>
+        <Version>1.5.0.11</Version>
     </PropertyGroup>
 	<PropertyGroup Condition="'$(Configuration)'=='Release'">
         <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
@@ -35,9 +35,6 @@
       <Compile Remove="FFXIVClientInterface\**" />
       <EmbeddedResource Remove="FFXIVClientInterface\**" />
       <None Remove="FFXIVClientInterface\**" />
-    </ItemGroup>
-    <ItemGroup Condition="'$(Configuration)'=='Release'">
-        <Compile Remove="Debugging\**" />
     </ItemGroup>
     <ItemGroup>
       <PackageReference Include="ILMerge" Version="3.0.41" />
