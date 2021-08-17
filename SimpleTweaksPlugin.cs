@@ -178,8 +178,8 @@ namespace SimpleTweaksPlugin {
             Tweaks = tweakList.OrderBy(t => t.Name).ToList();
 
 #if DEBUG
-            DebugManager.Enabled = true;
-            drawConfigWindow = true;
+            DebugManager.Enabled = false;
+            drawConfigWindow = false;
 #endif
 
         }
