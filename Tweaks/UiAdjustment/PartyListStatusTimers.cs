@@ -12,8 +12,8 @@ using SimpleTweaksPlugin.Helper;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class PartyListStatusTimers : UiAdjustments.SubTweak {
-        public override string Name => "Party List Status Timers";
-        public override string Description => "Show timers on status effects on the party list.";
+        public override string Name => "队伍列表Buff时间显示";
+        public override string Description => "在队伍列表上显示(De)Buff的剩余时间.";
 
         [StructLayout(LayoutKind.Explicit, Size = 16)]
         public struct PartyStatus {
