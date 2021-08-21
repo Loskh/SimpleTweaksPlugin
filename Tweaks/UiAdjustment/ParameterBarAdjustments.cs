@@ -10,8 +10,8 @@ using SimpleTweaksPlugin.TweakSystem;
 
 namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
     public unsafe class ParameterBarAdjustments : UiAdjustments.SubTweak {
-        public override string Name => "Parameter Bar Adjustments";
-        public override string Description => "Allows hiding or moving specific parts of the parameter bar (HP and mana bars).";
+        public override string Name => "HP/MP条修改";
+        public override string Description => "修改HP/MP条位置或隐藏部分部件.";
         protected override string Author => "Aireil";
         public override IEnumerable<string> Tags => new[] {"parameter", "hp", "mana", "bar"};
 
@@ -90,17 +90,17 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
         protected override DrawConfigDelegate DrawConfigTree => (ref bool hasChanged) =>
         {
-            hasChanged |= VisibilityAndOffsetEditor("Hide Target Cycling", ref Config.TargetCycling, DefaultConfig.TargetCycling);
+            hasChanged |= VisibilityAndOffsetEditor("隐藏可选目标指示", ref Config.TargetCycling, DefaultConfig.TargetCycling);
             ImGui.Dummy(new Vector2(5) * ImGui.GetIO().FontGlobalScale);
 
-            hasChanged |= VisibilityAndOffsetEditor("Hide HP Bar", ref Config.HpBar, DefaultConfig.HpBar);
-            hasChanged |= ImGui.Checkbox("Hide 'HP' Text", ref Config.HideHpTitle);
-            hasChanged |= VisibilityAndOffsetEditor("Hide HP Value", ref Config.HpValue, DefaultConfig.HpValue);
+            hasChanged |= VisibilityAndOffsetEditor("隐藏HP条", ref Config.HpBar, DefaultConfig.HpBar);
+            hasChanged |= ImGui.Checkbox("隐藏'HP'文字", ref Config.HideHpTitle);
+            hasChanged |= VisibilityAndOffsetEditor("隐藏HP值", ref Config.HpValue, DefaultConfig.HpValue);
             ImGui.Dummy(new Vector2(5) * ImGui.GetIO().FontGlobalScale);
 
-            hasChanged |= VisibilityAndOffsetEditor("Hide MP Bar", ref Config.MpBar, DefaultConfig.MpBar);
-            hasChanged |= ImGui.Checkbox("Hide 'MP' Text", ref Config.HideMpTitle);
-            hasChanged |= VisibilityAndOffsetEditor("Hide MP Value", ref Config.MpValue, DefaultConfig.MpValue);
+            hasChanged |= VisibilityAndOffsetEditor("隐藏MP条", ref Config.MpBar, DefaultConfig.MpBar);
+            hasChanged |= ImGui.Checkbox("隐藏'MP'文字", ref Config.HideMpTitle);
+            hasChanged |= VisibilityAndOffsetEditor("隐藏MP值", ref Config.MpValue, DefaultConfig.MpValue);
 
             if (hasChanged) UpdateParameterBar(true);
         };
