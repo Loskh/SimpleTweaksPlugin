@@ -5,8 +5,8 @@ using SimpleTweaksPlugin.TweakSystem;
 
 namespace SimpleTweaksPlugin.Tweaks {
     public class MoreGearSets : Tweak {
-        public override string Name => "More Gear Sets";
-        public override string Description => "Increases maximum gear sets to 100.";
+        public override string Name => "更多套装槽位（目前不知道开了之后上传存档会发生什么,自己掂量）";
+        public override string Description => "增加可储存的职业套装数量到100（目前不知道开了之后上传存档会发生什么）.";
         protected override string Author => "UnknownX";
 
         private const byte numGearSets = 100; // Cannot be increased above 100

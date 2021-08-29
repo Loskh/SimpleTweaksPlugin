@@ -15,8 +15,8 @@ using static Dalamud.Game.Text.XivChatType;
 
 namespace SimpleTweaksPlugin.Tweaks.Chat {
     public unsafe class ChatNameColours : ChatTweaks.SubTweak {
-        public override string Name => "Chat Name Colours";
-        public override string Description => "Gives players a random colour in chat, or set the name manually.";
+        public override string Name => "聊天角色名染色";
+        public override string Description => "自动对聊天栏中角色名进行染色,也可以指定特定角色名的颜色.";
         public delegate void* PrintMessage(RaptureLogModule* chatManager, XivChatType xivChatType, IntPtr senderName, IntPtr message, uint senderId, byte param);
         private HookWrapper<PrintMessage> printChatHook;
 
@@ -50,8 +50,8 @@ namespace SimpleTweaksPlugin.Tweaks.Chat {
 
             if (ImGui.BeginTable("forcedPlayerNames", 4)) {
                 ImGui.TableSetupColumn("", ImGuiTableColumnFlags.WidthFixed, buttonSize.X);
-                ImGui.TableSetupColumn("Name", ImGuiTableColumnFlags.WidthFixed, 180 * ImGui.GetIO().FontGlobalScale);
-                ImGui.TableSetupColumn("Server", ImGuiTableColumnFlags.WidthFixed, 100 * ImGui.GetIO().FontGlobalScale);
+                ImGui.TableSetupColumn("角色名", ImGuiTableColumnFlags.WidthFixed, 180 * ImGui.GetIO().FontGlobalScale);
+                ImGui.TableSetupColumn("服务器", ImGuiTableColumnFlags.WidthFixed, 100 * ImGui.GetIO().FontGlobalScale);
                 ImGui.TableSetupColumn("");
 
                 ImGui.TableHeadersRow();
