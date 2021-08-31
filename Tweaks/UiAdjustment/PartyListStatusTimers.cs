@@ -130,7 +130,6 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         private void Update(bool reset = false)
         {
 
-            if (PluginInterface.ClientState.LocalPlayer == null) return;
             var partyList = Common.GetUnitBase<AddonPartyList>();
             if (partyList == null) return;
 
