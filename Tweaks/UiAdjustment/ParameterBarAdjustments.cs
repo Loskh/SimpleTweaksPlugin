@@ -128,15 +128,16 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             textureNode2->Color.A = barConfig.Hide ? Byte00 : ByteFF;
         }
 
-        private void UpdateParameterBar(bool reset = false)
-        {
+        private void UpdateParameterBar(bool reset = false) {
             var parameterWidgetUnitBase = Common.GetUnitBase("_ParameterWidget");
             if (parameterWidgetUnitBase == null) return;
 
             // Target cycling
             var targetCyclingNode = parameterWidgetUnitBase->UldManager.SearchNodeById(2);
-            targetCyclingNode->SetPositionFloat(reset ? DefaultConfig.TargetCycling.OffsetX : Config.TargetCycling.OffsetX, reset ? DefaultConfig.TargetCycling.OffsetY : Config.TargetCycling.OffsetY);
-            targetCyclingNode->Color.A = Config.TargetCycling.Hide && !reset ? Byte00 : ByteFF;
+            if (targetCyclingNode != null) {
+                targetCyclingNode->SetPositionFloat(reset ? DefaultConfig.TargetCycling.OffsetX : Config.TargetCycling.OffsetX, reset ? DefaultConfig.TargetCycling.OffsetY : Config.TargetCycling.OffsetY);
+                targetCyclingNode->Color.A = Config.TargetCycling.Hide && !reset ? Byte00 : ByteFF;
+            }
 
             // MP
             var mpNode = (AtkComponentNode*) parameterWidgetUnitBase->UldManager.SearchNodeById(4);
