@@ -10,6 +10,7 @@ using SimpleTweaksPlugin.Enums;
 using SimpleTweaksPlugin.Helper;
 using SimpleTweaksPlugin.Tweaks.UiAdjustment;
 using SimpleTweaksPlugin.TweakSystem;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 
 namespace SimpleTweaksPlugin {
     public partial class UiAdjustmentsConfig {
@@ -35,6 +36,9 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         public override string Description => "调整目标咏唱栏文字位置以方便阅读";
         
         private readonly Vector2 buttonSize = new Vector2(26, 22);
+
+        private delegate long SetTargetCast(AgentHUD* agentHUD, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, FFXIVClientStructs.FFXIV.Client.Game.Character.Character* chara);
+        private HookWrapper<SetTargetCast> setTargetCastHook;
 
         protected override DrawConfigDelegate DrawConfigTree => (ref bool changed) => {
             var bSize = buttonSize * ImGui.GetIO().FontGlobalScale;
@@ -97,46 +101,55 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
         public void OnFrameworkUpdate(Framework framework) {
             try {
                 HandleBars();
-            } catch (Exception ex) {
+            }
+            catch (Exception ex) {
                 Plugin.Error(this, ex);
             }
         }
 
-        private void HandleBars(bool reset = false)
-        {
-
-            if (Service.ClientState.LocalPlayer == null) return;
+        private void HandleBars( bool reset = false) {
             var focusTargetInfo = Common.GetUnitBase("_FocusTargetInfo");
             if (focusTargetInfo != null && focusTargetInfo->UldManager.NodeList != null && focusTargetInfo->UldManager.NodeListCount > 16 && (focusTargetInfo->IsVisible || reset)) {
                 DoShift(focusTargetInfo->UldManager.NodeList[16]);
-                if (LoadedConfig.ShowCastTimeLeft)
-                {
-                    AddCastTimeTextNode(focusTargetInfo, (AtkTextNode*)focusTargetInfo->UldManager.NodeList[16], focusTargetInfo->UldManager.NodeList[16]->IsVisible);
-                }
-
-            }
-
-
-            var splitCastBar = Common.GetUnitBase("_TargetInfoCastBar");
-            if (splitCastBar != null && splitCastBar->UldManager.NodeList != null && splitCastBar->UldManager.NodeListCount > 5 && (splitCastBar->IsVisible || reset)) {
-                DoShift(splitCastBar->UldManager.NodeList[5]);
-                if (LoadedConfig.ShowCastTimeLeft)
-                {
-                    AddCastTimeTextNode(splitCastBar,(AtkTextNode*)splitCastBar->UldManager.NodeList[5],splitCastBar->UldManager.NodeList[5]->IsVisible);
-                }
-                if (!reset) return;
+                //if (LoadedConfig.ShowCastTimeLeft)
+                //{
+                //    AddCastTimeTextNode(focusTargetInfo, (AtkTextNode*)focusTargetInfo->UldManager.NodeList[16], focusTargetInfo->UldManager.NodeList[16]->IsVisible);
+                //}
             }
 
             var mainTargetInfo = Common.GetUnitBase("_TargetInfo");
             if (mainTargetInfo != null && mainTargetInfo->UldManager.NodeList != null && mainTargetInfo->UldManager.NodeListCount > 44 && (mainTargetInfo->IsVisible || reset)) {
                 DoShift(mainTargetInfo->UldManager.NodeList[44]);
-                if (LoadedConfig.ShowCastTimeLeft)
-                {
-                    AddCastTimeTextNode(mainTargetInfo,(AtkTextNode*)mainTargetInfo->UldManager.NodeList[44],mainTargetInfo->UldManager.NodeList[44]->IsVisible);
+                //if (LoadedConfig.ShowCastTimeLeft)
+                //{
+                //    AddCastTimeTextNode(mainTargetInfo,(AtkTextNode*)mainTargetInfo->UldManager.NodeList[44],mainTargetInfo->UldManager.NodeList[44]->IsVisible);
+                //}
+            }
+        }
+
+        private void HandleTargetInfoCastBar(FFXIVClientStructs.FFXIV.Client.Game.Character.Character* chara) {
+            var splitCastBar = Common.GetUnitBase("_TargetInfoCastBar");
+            if (splitCastBar != null && splitCastBar->UldManager.NodeList != null && splitCastBar->UldManager.NodeListCount > 5 && (splitCastBar->IsVisible)) {
+                DoShift(splitCastBar->UldManager.NodeList[5]);
+                if (LoadedConfig.ShowCastTimeLeft) {
+                    var action = chara->GetActionWork();
+                    if ((IntPtr)action != IntPtr.Zero) {
+                        //SimpleLog.Debug($"{action->Cast.MaxSpellTime}");
+                        var remain = action->Cast.MaxSpellTime - action->Cast.CurrentSpellTime;
+                        AddCastTimeTextNode(splitCastBar, (AtkTextNode*)splitCastBar->UldManager.NodeList[5], remain, splitCastBar->UldManager.NodeList[5]->IsVisible);
+                    }
                 }
             }
         }
-        
+
+        private void HideTargetInfoCastBarText()
+        {
+            var splitCastBar = Common.GetUnitBase("_TargetInfoCastBar");
+            if (splitCastBar != null && splitCastBar->UldManager.NodeList != null && splitCastBar->UldManager.NodeListCount > 5 && (splitCastBar->IsVisible)) {
+                AddCastTimeTextNode(splitCastBar, (AtkTextNode*)splitCastBar->UldManager.NodeList[5], 0, false);
+            }
+        }
+
         private const int MinOffset = 0;
         private const int MaxOffset = 48;
 
@@ -160,8 +173,7 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
 
         private const int TargetCastNodeId = 99990002;
 
-        private void AddCastTimeTextNode(AtkUnitBase* unit, AtkTextNode* cloneTextNode, bool visible = false)
-        {
+        private void AddCastTimeTextNode(AtkUnitBase* unit, AtkTextNode* cloneTextNode,float remainTime ,bool visible = false) {
             var textNode = (AtkTextNode*)GetNodeById(unit, TargetCastNodeId);
             
             if (textNode == null)
@@ -198,38 +210,35 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
                 //    PluginConfig.UiAdjustments.ShiftTargetCastBarText.CastTimeOffsetY);
                 //UiHelper.SetSize(textNode, cloneTextNode->AtkResNode.Width, cloneTextNode->AtkResNode.Height);
                 textNode->FontSize = 15;//(byte) PluginConfig.UiAdjustments.ShiftTargetCastBarText.CastTimeFontSize;
-                textNode->SetText(GetTargetCastTime().ToString("00.00"));
+                textNode->SetText(remainTime.ToString("00.00"));
                 UiHelper.Show(textNode);
             }
 
         }
 
 
-        private float GetTargetCastTime()
-        {
-            if (Service.ClientState.LocalPlayer == null ||
-                Service.Targets.Target == null)
-                return 0;
-            var target = Service.Targets.Target;
-            if (target is BattleChara)
-            {
-                var castTime = ((BattleChara)target).CurrentCastTime;
-                var totalCastTime =((BattleChara)target).TotalCastTime;
-                return totalCastTime - castTime;
-            }
+        //private float GetTargetCastTime()
+        //{
+        //    if (Service.ClientState.LocalPlayer == null ||
+        //        Service.Targets.Target == null)
+        //        return 0;
+        //    var target = Service.Targets.Target;
+        //    if (target is BattleChara) {
+        //        var castTime = ((BattleChara)target).CurrentCastTime;
+        //        var totalCastTime = ((BattleChara)target).TotalCastTime;
+        //        return totalCastTime - castTime;
+        //    }
 
-            return 0;
-        }
+        //    return 0;
+        //}
 
-        
-        private static AtkResNode* GetNodeById(AtkUnitBase* compBase, uint id)
-        {
+
+        private static AtkResNode* GetNodeById(AtkUnitBase* compBase, uint id) {
             if (compBase == null) return null;
             if ((compBase->UldManager.Flags1 & 1) == 0 || id <= 0) return null;
             var count = compBase->UldManager.NodeListCount;
             for (var i = 0; i < count; i++)
-            {
-                
+            {              
                 var node = compBase->UldManager.NodeList[i];
                 //SimpleLog.Information(i+"@"+node->NodeID);
                 if (node->NodeID == id) return node;
@@ -241,23 +250,38 @@ namespace SimpleTweaksPlugin.Tweaks.UiAdjustment {
             if (Enabled) return;
             LoadedConfig = LoadConfig<Config>() ?? PluginConfig.UiAdjustments.ShiftTargetCastBarText ?? new Config();
             Service.Framework.Update += OnFrameworkUpdate;
+            setTargetCastHook ??= Common.Hook<SetTargetCast>("E8 ?? ?? ?? ?? 8B D8 85 C0 79 ?? 45 33 C0", SetTargetCastDetour);
+            setTargetCastHook?.Enable();
             Enabled = true;
         }
+
+
+        private unsafe long SetTargetCastDetour(AgentHUD* agentHUD, NumberArrayData* numberArrayData, StringArrayData* stringArrayData, FFXIVClientStructs.FFXIV.Client.Game.Character.Character* chara) {
+            var ret= setTargetCastHook.Original(agentHUD, numberArrayData, stringArrayData, chara);
+            if (ret != 0xFFFFFFFF && ret != 0) {
+                HandleTargetInfoCastBar(chara);
+            }
+            else HideTargetInfoCastBarText();
+            return ret;
+        }   
 
         public override void Disable() {
             if (!Enabled) return;
             SaveConfig(LoadedConfig);
             PluginConfig.UiAdjustments.ShiftTargetCastBarText = null;
             Service.Framework.Update -= OnFrameworkUpdate;
+            setTargetCastHook.Disable();
             SimpleLog.Debug($"[{GetType().Name}] Reset");
-            HandleBars(true);
+            //HandleBars(0,true);
             Enabled = false;
+            base.Disable();
         }
 
         public override void Dispose() {
             Service.Framework.Update -= OnFrameworkUpdate;
             Enabled = false;
             Ready = false;
+            base.Dispose();
         }
     }
 }
